@@ -25,8 +25,13 @@ serve(async (req) => {
       throw new Error('No traits provided for story generation');
     }
 
+    // Filter out Honorary trait - it's reserved for the 10 rare experimentals with unrevealed backstories
+    const filteredTraits = traits.filter((t: { trait_type: string; value: string }) => 
+      t.trait_type.toLowerCase() !== 'honorary'
+    );
+
     // Build trait description for the AI
-    const traitDescription = traits
+    const traitDescription = filteredTraits
       .map((t: { trait_type: string; value: string }) => `${t.trait_type}: ${t.value}`)
       .join('\n- ');
 
@@ -62,9 +67,16 @@ Rovers are an art-driven collectibles project by UK artist, animator and designe
 9. **Preserve the Planet Above All** - Earth is the base layer. Without it, no system—human or machine—can endure
 10. **Be Eternal Watchers** - Remain as immutable witnesses, recording without bias, acting without permission, standing guard for centuries
 
+## WRITING STYLE
+
+- Write in clear, accessible language that anyone can enjoy
+- Avoid heavy scientific or technical jargon—keep it simple and engaging
+- Use vivid imagery and action without overcomplicating descriptions
+- Think adventure novel, not science textbook
+
 ## STORY GUIDELINES
 
-Write in a cinematic, immersive style that brings each rover's personality to life. Your stories should:
+Your stories should:
 - Be approximately ${wordCount} words long (${paragraphGuidance})
 - Feature exciting adventures that match the rover's characteristics AND align with the Rovers lore above
 - Reference the mission of restoration, cleansing, or uncovering humanity's past

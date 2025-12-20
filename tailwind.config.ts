@@ -14,9 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        terminal: ['JetBrains Mono', 'monospace'],
-        mono: ['JetBrains Mono', 'monospace'],
-        serif: ['Literata', 'Georgia', 'serif'],
+        terminal: ['VT323', 'monospace'],
+        mono: ['Share Tech Mono', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -52,12 +51,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        reader: {
-          paper: "hsl(35 30% 94%)",
-          ink: "hsl(25 30% 18%)",
-          sepia: "hsl(35 35% 90%)",
-          brown: "hsl(25 45% 35%)",
-          tan: "hsl(35 25% 85%)",
+        terminal: {
+          green: "hsl(120 100% 50%)",
+          "green-dim": "hsl(120 60% 40%)",
+          "green-dark": "hsl(120 100% 15%)",
+          black: "hsl(0 0% 0%)",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -84,20 +82,29 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        "fade-in": {
-          from: { opacity: "0", transform: "translateY(10px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
+        "pulse-glow": {
+          "0%, 100%": { 
+            boxShadow: "0 0 10px hsl(120 100% 50% / 0.5)",
+          },
+          "50%": { 
+            boxShadow: "0 0 30px hsl(120 100% 50% / 0.8), 0 0 60px hsl(120 100% 50% / 0.4)",
+          },
         },
-        "gentle-pulse": {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.6" },
+        "typing": {
+          from: { width: "0" },
+          to: { width: "100%" },
+        },
+        "blink": {
+          "0%, 50%": { opacity: "1" },
+          "51%, 100%": { opacity: "0" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.4s ease-out",
-        "gentle-pulse": "gentle-pulse 2s ease-in-out infinite",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "typing": "typing 2s steps(40, end)",
+        "blink": "blink 1s infinite",
       },
     },
   },

@@ -17,43 +17,66 @@ export const StoryDisplay: React.FC<StoryDisplayProps> = ({
 }) => {
   const [displayedText, setDisplayedText] = useState('');
 
+  // Typing effect for the story
   useEffect(() => {
     setDisplayedText(story);
   }, [story]);
 
   if (!story && !isGenerating) {
     return (
-      <div className={cn("text-center py-12", className)}>
-        <div className="text-6xl mb-6">📖</div>
-        <div className="text-muted-foreground font-serif text-lg">
-          Select a rover above to generate its story
+      <div className={cn("font-terminal text-center py-12", className)}>
+        <pre className="text-primary/40 text-glow text-xs mb-6">
+{`
+    ╔═══════════════════════════════════════╗
+    ║                                       ║
+    ║     SELECT A ROVER TO BEGIN           ║
+    ║     STORY GENERATION PROTOCOL         ║
+    ║                                       ║
+    ╚═══════════════════════════════════════╝
+`}
+        </pre>
+        <div className="text-muted-foreground">
+          {">"} AWAITING ROVER SELECTION...
         </div>
       </div>
     );
   }
 
   return (
-    <div className={cn("font-serif", className)}>
+    <div className={cn("font-terminal", className)}>
       {/* Story header */}
-      <div className="text-primary font-mono text-sm mb-4 flex items-center gap-2 uppercase tracking-wider">
-        <span>
-          {roverName ? `Story of ${roverName}` : 'Incoming Story'}
+      <div className="text-primary text-glow text-lg mb-4 flex items-center gap-2">
+        <span>{">>>"}</span>
+        <span className="uppercase tracking-wider">
+          {roverName ? `TRANSMISSION FROM ${roverName}` : 'INCOMING TRANSMISSION'}
+        </span>
+        <span className="flex-1 overflow-hidden text-primary/30">
+          {'═'.repeat(20)}
         </span>
       </div>
 
       {/* Story content */}
-      <div className="relative bg-background border border-border rounded-lg p-6 shadow-sm">
+      <div className="relative bg-card/30 border border-primary/30 p-4">
+        {/* Corner decorations */}
+        <span className="absolute top-0 left-0 text-primary text-glow">╔</span>
+        <span className="absolute top-0 right-0 text-primary text-glow">╗</span>
+        <span className="absolute bottom-0 left-0 text-primary text-glow">╚</span>
+        <span className="absolute bottom-0 right-0 text-primary text-glow">╝</span>
+
         {isGenerating && !story && (
           <div className="text-center py-8">
-            <div className="text-foreground text-lg font-medium">
-              Generating Story
+            <div className="text-primary glow-pulse text-lg">
+              GENERATING STORY
             </div>
-            <div className="text-muted-foreground text-sm mt-2">
-              Analyzing rover traits...
+            <div className="text-muted-foreground text-sm mt-2 loading-dots">
+              ANALYZING ROVER TRAITS
             </div>
-            <div className="w-32 h-1 bg-secondary rounded-full overflow-hidden mx-auto mt-4">
-              <div className="h-full bg-primary rounded-full animate-pulse w-1/2" />
-            </div>
+            <pre className="text-primary/30 text-xs mt-4">
+{`
+   [████████░░░░░░░░░░]  42%
+   PROCESSING NEURAL PATHWAYS...
+`}
+            </pre>
           </div>
         )}
 
@@ -62,7 +85,7 @@ export const StoryDisplay: React.FC<StoryDisplayProps> = ({
             {displayedText.split('\n\n').map((paragraph, index) => (
               <p 
                 key={index} 
-                className="text-foreground leading-relaxed text-lg"
+                className="text-primary text-glow leading-relaxed text-lg"
               >
                 {paragraph}
               </p>
@@ -74,10 +97,10 @@ export const StoryDisplay: React.FC<StoryDisplayProps> = ({
 
       {/* Footer */}
       {story && !isGenerating && (
-        <div className="text-muted-foreground text-sm mt-4 flex items-center justify-between font-mono">
-          <span>Story complete</span>
-          <span>
-            {story.split(' ').length} words
+        <div className="text-muted-foreground text-sm mt-4 flex items-center justify-between">
+          <span>{">"} TRANSMISSION COMPLETE</span>
+          <span className="text-primary/50">
+            [{story.split(' ').length} WORDS RECEIVED]
           </span>
         </div>
       )}

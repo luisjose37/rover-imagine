@@ -7,99 +7,94 @@ import { TerminalButton } from '@/components/TerminalButton';
 import { ASCIILoader, ASCIIDivider } from '@/components/ASCIIElements';
 import { TerminalInput } from '@/components/TerminalInput';
 import { WordCountSelector } from '@/components/WordCountSelector';
-
 interface NFT {
   identifier: string;
   name: string;
   image_url: string;
   description?: string;
-  traits: Array<{ trait_type: string; value: string }>;
+  traits: Array<{
+    trait_type: string;
+    value: string;
+  }>;
   opensea_url?: string;
 }
-
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-
 const Index = () => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [tokenId, setTokenId] = useState('');
   const [selectedNFT, setSelectedNFT] = useState<NFT | null>(null);
   const [story, setStory] = useState('');
   const [wordCount, setWordCount] = useState<500 | 1000 | 1500>(500);
   const [isLoadingNFT, setIsLoadingNFT] = useState(false);
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
-
   const fetchNFT = async () => {
     if (!tokenId.trim()) {
       toast({
         title: "INPUT REQUIRED",
         description: "Please enter a token ID",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     setIsLoadingNFT(true);
     setSelectedNFT(null);
     setStory('');
-
     try {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/fetch-nfts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tokenId: tokenId.trim() }),
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          tokenId: tokenId.trim()
+        })
       });
-
       const data = await response.json();
-      
       if (data.error) {
         throw new Error(data.error);
       }
-
       setSelectedNFT(data);
-
       toast({
         title: "ROVER LOCATED",
-        description: `${data.name} loaded with ${data.traits?.length || 0} traits`,
+        description: `${data.name} loaded with ${data.traits?.length || 0} traits`
       });
-
     } catch (error) {
       console.error('Error fetching NFT:', error);
       toast({
         title: "SCAN FAILED",
         description: error instanceof Error ? error.message : "Failed to locate rover",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsLoadingNFT(false);
     }
   };
-
   const generateStory = useCallback(async () => {
     if (!selectedNFT) return;
-
     if (!selectedNFT.traits || selectedNFT.traits.length === 0) {
       toast({
         title: "NO TRAITS DETECTED",
         description: "This rover has no trait data available for story generation",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     setIsGeneratingStory(true);
     setStory('');
-
     try {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-story`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           roverName: selectedNFT.name,
           traits: selectedNFT.traits,
-          wordCount: wordCount,
-        }),
+          wordCount: wordCount
+        })
       });
-
       if (!response.ok) {
         if (response.status === 429) {
           throw new Error('Rate limits exceeded. Please try again later.');
@@ -109,32 +104,29 @@ const Index = () => {
         }
         throw new Error('Failed to generate story');
       }
-
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No response stream');
-
       const decoder = new TextDecoder();
       let fullStory = '';
       let buffer = '';
-
       while (true) {
-        const { done, value } = await reader.read();
+        const {
+          done,
+          value
+        } = await reader.read();
         if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        
+        buffer += decoder.decode(value, {
+          stream: true
+        });
         let newlineIndex: number;
         while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
           let line = buffer.slice(0, newlineIndex);
           buffer = buffer.slice(newlineIndex + 1);
-
           if (line.endsWith('\r')) line = line.slice(0, -1);
           if (line.startsWith(':') || line.trim() === '') continue;
           if (!line.startsWith('data: ')) continue;
-
           const jsonStr = line.slice(6).trim();
           if (jsonStr === '[DONE]') break;
-
           try {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content;
@@ -148,34 +140,30 @@ const Index = () => {
           }
         }
       }
-
       toast({
         title: "TRANSMISSION COMPLETE",
-        description: `Story generated (~${wordCount} words)`,
+        description: `Story generated (~${wordCount} words)`
       });
-
     } catch (error) {
       console.error('Error generating story:', error);
       toast({
         title: "GENERATION FAILED",
         description: error instanceof Error ? error.message : "Unknown error occurred",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsGeneratingStory(false);
     }
   }, [selectedNFT, wordCount, toast]);
-
   const copyToClipboard = () => {
     if (story) {
       navigator.clipboard.writeText(story);
       toast({
         title: "COPIED",
-        description: "Story copied to clipboard",
+        description: "Story copied to clipboard"
       });
     }
   };
-
   const exportStory = () => {
     if (story && selectedNFT) {
       const traitsText = selectedNFT.traits?.map(t => `  ${t.trait_type}: ${t.value}`).join('\n') || 'No traits';
@@ -196,8 +184,9 @@ ${story}
 
 ${'═'.repeat(50)}
 Generated by rover.imagine | Word Count: ~${wordCount}`;
-
-      const blob = new Blob([content], { type: 'text/plain' });
+      const blob = new Blob([content], {
+        type: 'text/plain'
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -206,22 +195,19 @@ Generated by rover.imagine | Word Count: ~${wordCount}`;
       URL.revokeObjectURL(url);
     }
   };
-
   const resetSearch = () => {
     setTokenId('');
     setSelectedNFT(null);
     setStory('');
   };
-
-  return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
+  return <div className="min-h-screen bg-background p-4 md:p-8">
       {/* Main terminal container */}
       <TerminalWindow className="max-w-6xl mx-auto">
         {/* Header section */}
         <div className="p-6 border-b border-primary/30">
           <div className="text-center">
             <pre className="text-primary text-glow font-terminal text-xs md:text-sm inline-block">
-{`
+            {`
 ██████╗  ██████╗ ██╗   ██╗███████╗██████╗    ██╗███╗   ███╗ █████╗  ██████╗ ██╗███╗   ██╗███████╗
 ██╔══██╗██╔═══██╗██║   ██║██╔════╝██╔══██╗   ██║████╗ ████║██╔══██╗██╔════╝ ██║████╗  ██║██╔════╝
 ██████╔╝██║   ██║██║   ██║█████╗  ██████╔╝   ██║██╔████╔██║███████║██║  ███╗██║██╔██╗ ██║█████╗  
@@ -230,9 +216,7 @@ Generated by rover.imagine | Word Count: ~${wordCount}`;
 ╚═╝  ╚═╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═╝╚═╝╚═╝╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝╚══════╝
 `}
             </pre>
-            <p className="text-muted-foreground font-terminal mt-4 text-lg">
-              {">"} AI-POWERED STORY GENERATION FOR BLOCKCHAIN ROVERS
-            </p>
+            
           </div>
         </div>
 
@@ -244,20 +228,9 @@ Generated by rover.imagine | Word Count: ~${wordCount}`;
             </div>
             
             <div className="flex gap-4 items-end justify-center flex-wrap">
-              <TerminalInput
-                label="TOKEN ID"
-                value={tokenId}
-                onChange={setTokenId}
-                placeholder="e.g., 1234"
-                onSubmit={fetchNFT}
-                disabled={isLoadingNFT}
-              />
+              <TerminalInput label="TOKEN ID" value={tokenId} onChange={setTokenId} placeholder="e.g., 1234" onSubmit={fetchNFT} disabled={isLoadingNFT} />
               
-              <TerminalButton
-                onClick={fetchNFT}
-                disabled={isLoadingNFT || !tokenId.trim()}
-                variant="primary"
-              >
+              <TerminalButton onClick={fetchNFT} disabled={isLoadingNFT || !tokenId.trim()} variant="primary">
                 {isLoadingNFT ? 'SCANNING...' : 'LOCATE ROVER'}
               </TerminalButton>
             </div>
@@ -269,15 +242,12 @@ Generated by rover.imagine | Word Count: ~${wordCount}`;
         </div>
 
         {/* Loading state */}
-        {isLoadingNFT && (
-          <div className="p-8">
+        {isLoadingNFT && <div className="p-8">
             <ASCIILoader text="LOCATING ROVER" />
-          </div>
-        )}
+          </div>}
 
         {/* NFT Details and Story Generation */}
-        {selectedNFT && !isLoadingNFT && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+        {selectedNFT && !isLoadingNFT && <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
             {/* Left panel - NFT details */}
             <div className="border-r border-primary/30 p-6">
               <div className="text-primary font-terminal text-lg mb-4 text-glow">
@@ -289,28 +259,9 @@ Generated by rover.imagine | Word Count: ~${wordCount}`;
                 <div className="flex items-start gap-4">
                   {/* NFT Image */}
                   <div className="relative w-48 h-48 flex-shrink-0 border border-primary overflow-hidden">
-                    {selectedNFT.image_url ? (
-                      selectedNFT.image_url.endsWith('.mp4') ? (
-                        <video 
-                          src={selectedNFT.image_url} 
-                          autoPlay
-                          loop
-                          muted
-                          playsInline
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <img 
-                          src={selectedNFT.image_url} 
-                          alt={selectedNFT.name}
-                          className="w-full h-full object-cover"
-                        />
-                      )
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-primary/50 text-xs font-terminal">
+                    {selectedNFT.image_url ? selectedNFT.image_url.endsWith('.mp4') ? <video src={selectedNFT.image_url} autoPlay loop muted playsInline className="w-full h-full object-cover" /> : <img src={selectedNFT.image_url} alt={selectedNFT.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-primary/50 text-xs font-terminal">
                         [NO IMG]
-                      </div>
-                    )}
+                      </div>}
                   </div>
                   
                   {/* NFT Info */}
@@ -321,16 +272,9 @@ Generated by rover.imagine | Word Count: ~${wordCount}`;
                     <div className="text-muted-foreground font-terminal text-sm mt-1">
                       TOKEN ID: {selectedNFT.identifier}
                     </div>
-                    {selectedNFT.opensea_url && (
-                      <a 
-                        href={selectedNFT.opensea_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-primary/70 hover:text-primary font-terminal text-sm underline mt-2 inline-block"
-                      >
+                    {selectedNFT.opensea_url && <a href={selectedNFT.opensea_url} target="_blank" rel="noopener noreferrer" className="text-primary/70 hover:text-primary font-terminal text-sm underline mt-2 inline-block">
                         {">"} VIEW ON OPENSEA
-                      </a>
-                    )}
+                      </a>}
                   </div>
                 </div>
               </div>
@@ -338,47 +282,29 @@ Generated by rover.imagine | Word Count: ~${wordCount}`;
               <ASCIIDivider />
               
               {/* Traits */}
-              <TraitDisplay 
-                traits={selectedNFT.traits} 
-                className="mt-4"
-              />
+              <TraitDisplay traits={selectedNFT.traits} className="mt-4" />
 
               <ASCIIDivider className="mt-4" />
 
               {/* Word Count Selection */}
               <div className="mt-4">
-                <WordCountSelector 
-                  value={wordCount} 
-                  onChange={setWordCount}
-                  disabled={isGeneratingStory}
-                />
+                <WordCountSelector value={wordCount} onChange={setWordCount} disabled={isGeneratingStory} />
               </div>
 
               {/* Action Buttons */}
               <div className="mt-6 flex flex-wrap gap-3">
-                <TerminalButton
-                  onClick={generateStory}
-                  disabled={isGeneratingStory || !selectedNFT.traits || selectedNFT.traits.length === 0}
-                  variant="primary"
-                  size="lg"
-                >
+                <TerminalButton onClick={generateStory} disabled={isGeneratingStory || !selectedNFT.traits || selectedNFT.traits.length === 0} variant="primary" size="lg">
                   {isGeneratingStory ? 'GENERATING...' : 'GENERATE STORY'}
                 </TerminalButton>
                 
-                <TerminalButton
-                  onClick={resetSearch}
-                  variant="secondary"
-                  disabled={isGeneratingStory}
-                >
+                <TerminalButton onClick={resetSearch} variant="secondary" disabled={isGeneratingStory}>
                   NEW SEARCH
                 </TerminalButton>
               </div>
 
-              {(!selectedNFT.traits || selectedNFT.traits.length === 0) && (
-                <div className="mt-4 text-destructive font-terminal text-sm border border-destructive/50 p-3">
+              {(!selectedNFT.traits || selectedNFT.traits.length === 0) && <div className="mt-4 text-destructive font-terminal text-sm border border-destructive/50 p-3">
                   ⚠ NO TRAIT DATA AVAILABLE FOR THIS ROVER
-                </div>
-              )}
+                </div>}
             </div>
 
             {/* Right panel - Story display */}
@@ -387,31 +313,23 @@ Generated by rover.imagine | Word Count: ~${wordCount}`;
                 {">"} STORY TRANSMISSION [{wordCount} WORDS]
               </div>
               
-              <StoryDisplay
-                story={story}
-                isGenerating={isGeneratingStory}
-                roverName={selectedNFT?.name}
-              />
+              <StoryDisplay story={story} isGenerating={isGeneratingStory} roverName={selectedNFT?.name} />
 
-              {story && !isGeneratingStory && (
-                <div className="mt-6 flex flex-wrap gap-3">
+              {story && !isGeneratingStory && <div className="mt-6 flex flex-wrap gap-3">
                   <TerminalButton onClick={copyToClipboard} variant="secondary">
                     COPY
                   </TerminalButton>
                   <TerminalButton onClick={exportStory} variant="secondary">
                     EXPORT .TXT
                   </TerminalButton>
-                </div>
-              )}
+                </div>}
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Empty state when no NFT selected */}
-        {!selectedNFT && !isLoadingNFT && (
-          <div className="p-8 text-center">
+        {!selectedNFT && !isLoadingNFT && <div className="p-8 text-center">
             <pre className="text-primary/40 font-terminal text-xs mb-6">
-{`
+          {`
       _______________
      /               \\
     |   ROVER.XYZ    |
@@ -426,8 +344,7 @@ Generated by rover.imagine | Word Count: ~${wordCount}`;
             <div className="text-muted-foreground font-terminal">
               {">"} ENTER A TOKEN ID TO BEGIN ROVER ANALYSIS...
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Footer */}
         <div className="border-t border-primary/30 p-4">
@@ -441,8 +358,6 @@ Generated by rover.imagine | Word Count: ~${wordCount}`;
           </div>
         </div>
       </TerminalWindow>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;

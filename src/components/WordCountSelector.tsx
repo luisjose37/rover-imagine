@@ -19,11 +19,11 @@ export const WordCountSelector: React.FC<WordCountSelectorProps> = ({
   disabled,
 }) => {
   return (
-    <div className="font-terminal">
+    <div className="font-terminal flex flex-col items-center">
       <div className="text-muted-foreground text-sm mb-2">
         {">"} SELECT STORY LENGTH:
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 justify-center">
         {options.map((option) => (
           <button
             key={option.value}

@@ -25,9 +25,9 @@ serve(async (req) => {
       throw new Error('No traits provided for story generation');
     }
 
-    // Filter out Honorary trait - it's reserved for the 10 rare experimentals with unrevealed backstories
+    // Filter out Honorary trait (reserved for rare experimentals) and Biome trait (all rovers share the same biome)
     const filteredTraits = traits.filter((t: { trait_type: string; value: string }) => 
-      t.trait_type.toLowerCase() !== 'honorary'
+      t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome'
     );
 
     // Build trait description for the AI
@@ -73,6 +73,7 @@ Rovers are an art-driven collectibles project by UK artist, animator and designe
 - Avoid heavy scientific or technical jargon—keep it simple and engaging
 - Use vivid imagery and action without overcomplicating descriptions
 - Think adventure novel, not science textbook
+- Choose a creative, interesting biome/environment for the story setting (volcanic wastelands, bioluminescent forests, frozen tundras, overgrown megacities, crystal caves, etc.) - be imaginative!
 
 ## STORY GUIDELINES
 

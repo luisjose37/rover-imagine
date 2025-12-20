@@ -19,7 +19,7 @@ serve(async (req) => {
       throw new Error('AI API key is not configured');
     }
 
-    const { roverName, traits, imageUrl } = await req.json();
+    const { roverName, traits, wordCount = 500 } = await req.json();
 
     if (!traits || traits.length === 0) {
       throw new Error('No traits provided for story generation');
@@ -28,27 +28,41 @@ serve(async (req) => {
     // Build trait description for the AI
     const traitDescription = traits
       .map((t: { trait_type: string; value: string }) => `${t.trait_type}: ${t.value}`)
-      .join(', ');
+      .join('\n- ');
+
+    // Calculate approximate paragraph count based on word count
+    const paragraphGuidance = wordCount <= 500 
+      ? "2-3 paragraphs" 
+      : wordCount <= 1000 
+        ? "4-6 paragraphs"
+        : "6-8 paragraphs";
 
     const systemPrompt = `You are a master storyteller for the Rovers universe - a collection of digital rover explorers stored on the blockchain. Your stories are creative, adventurous, and deeply personalized based on each rover's unique traits.
 
 Write in a cinematic, immersive style that brings each rover's personality to life. Your stories should:
-- Be 2-3 paragraphs long (around 200-300 words)
+- Be approximately ${wordCount} words long (${paragraphGuidance})
 - Feature exciting adventures that match the rover's characteristics
 - Have vivid descriptions and action sequences
 - Include a meaningful conclusion or cliffhanger
 - Feel like they could be part of a larger saga
 
-Match the tone to the rover's traits - a fast rover might have a chase scene, a rugged rover might explore harsh terrain, a serene rover might discover hidden wonders.`;
+Match the tone to the rover's traits - use the specific attributes to drive the narrative. For example:
+- A rover with "Speed: Fast" might have a thrilling chase or race scene
+- A rover with "Terrain: Rocky" might explore treacherous mountain passes
+- A rover with "Mood: Calm" might discover hidden wonders in serene locations
+- A rover with unique colors or designs should have those reflected in the story
 
-    const userPrompt = `Generate an exciting adventure story for a rover named "${roverName || 'Unknown Rover'}" with these traits:
+IMPORTANT: Write EXACTLY ${wordCount} words. This is critical.`;
 
-${traitDescription}
+    const userPrompt = `Generate an exciting adventure story for a rover named "${roverName || 'Unknown Rover'}" with these specific traits:
 
-Create a unique story that showcases this rover's personality and capabilities based on its attributes. Make it feel like an epic space/terrain exploration adventure.`;
+- ${traitDescription}
+
+Create a unique story that showcases this rover's personality and capabilities based on its attributes. Make it feel like an epic exploration adventure. Remember: the story must be approximately ${wordCount} words.`;
 
     console.log('Generating story for rover:', roverName);
     console.log('Traits:', traitDescription);
+    console.log('Target word count:', wordCount);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

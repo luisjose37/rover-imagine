@@ -5,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const CONTRACT_ADDRESS = '0xe0e7f149959c6cac0ddc2cb4ab27942bffda1eb4';
+const CHAIN = 'ethereum';
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -19,19 +22,16 @@ serve(async (req) => {
       throw new Error('OpenSea API key is not configured');
     }
 
-    const { tokenId, limit = 20, cursor } = await req.json();
+    const { tokenId } = await req.json();
 
-    let url: string;
-    
-    if (tokenId) {
-      // Fetch specific NFT
-      url = `https://api.opensea.io/api/v2/chain/ethereum/contract/0x9a45f43c96d57af21e4ec0724a9e2f8c5b6e4d4c/nfts/${tokenId}`;
-    } else {
-      // Fetch collection NFTs
-      url = `https://api.opensea.io/api/v2/collection/roversxyz/nfts?limit=${limit}${cursor ? `&next=${cursor}` : ''}`;
+    if (!tokenId) {
+      throw new Error('Token ID is required');
     }
 
-    console.log('Fetching from OpenSea:', url);
+    // Fetch specific NFT with metadata
+    const url = `https://api.opensea.io/api/v2/chain/${CHAIN}/contract/${CONTRACT_ADDRESS}/nfts/${tokenId}`;
+
+    console.log('Fetching NFT from OpenSea:', url);
 
     const response = await fetch(url, {
       headers: {
@@ -43,13 +43,38 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('OpenSea API error:', response.status, errorText);
+      
+      if (response.status === 404) {
+        throw new Error(`Rover #${tokenId} not found. Please check the token ID.`);
+      }
+      
       throw new Error(`OpenSea API error: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('OpenSea response received, NFT count:', data.nfts?.length || 1);
+    console.log('OpenSea response received for token:', tokenId);
+    console.log('NFT data:', JSON.stringify(data, null, 2));
 
-    return new Response(JSON.stringify(data), {
+    // The response contains "nft" for single NFT fetch
+    const nft = data.nft;
+    
+    if (!nft) {
+      throw new Error('NFT data not found in response');
+    }
+
+    // Format the response with traits
+    const formattedNFT = {
+      identifier: nft.identifier,
+      name: nft.name || `Rover #${nft.identifier}`,
+      image_url: nft.image_url || nft.display_image_url,
+      description: nft.description,
+      traits: nft.traits || [],
+      opensea_url: nft.opensea_url,
+    };
+
+    console.log('Formatted NFT with traits count:', formattedNFT.traits.length);
+
+    return new Response(JSON.stringify(formattedNFT), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

@@ -8,9 +8,9 @@ interface WordCountSelectorProps {
 }
 
 const options: Array<{ value: 500 | 1000 | 1500; label: string }> = [
-  { value: 500, label: '500 WORDS' },
-  { value: 1000, label: '1000 WORDS' },
-  { value: 1500, label: '1500 WORDS' },
+  { value: 500, label: '500 words' },
+  { value: 1000, label: '1000 words' },
+  { value: 1500, label: '1500 words' },
 ];
 
 export const WordCountSelector: React.FC<WordCountSelectorProps> = ({
@@ -19,9 +19,9 @@ export const WordCountSelector: React.FC<WordCountSelectorProps> = ({
   disabled,
 }) => {
   return (
-    <div className="font-terminal flex flex-col items-center">
-      <div className="text-muted-foreground text-sm mb-2">
-        {">"} SELECT STORY LENGTH:
+    <div className="flex flex-col items-center">
+      <div className="text-muted-foreground text-sm mb-3 font-mono uppercase tracking-wider">
+        Select Story Length
       </div>
       <div className="flex flex-wrap gap-2 justify-center">
         {options.map((option) => (
@@ -30,15 +30,15 @@ export const WordCountSelector: React.FC<WordCountSelectorProps> = ({
             onClick={() => onChange(option.value)}
             disabled={disabled}
             className={cn(
-              "px-4 py-2 border transition-all duration-200",
-              "font-terminal text-sm",
+              "px-4 py-2 border rounded transition-all duration-200",
+              "font-mono text-sm",
               value === option.value
-                ? "border-primary bg-primary text-primary-foreground border-glow"
-                : "border-primary/30 text-primary/70 hover:border-primary/60 hover:text-primary",
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-secondary text-secondary-foreground hover:border-primary/50 hover:bg-muted",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
           >
-            [{value === option.value ? '●' : '○'}] {option.label}
+            {option.label}
           </button>
         ))}
       </div>

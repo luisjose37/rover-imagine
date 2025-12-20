@@ -15,28 +15,28 @@ export const TerminalButton: React.FC<TerminalButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = "font-terminal uppercase tracking-wider transition-all duration-200 border";
+  const baseStyles = "font-mono uppercase tracking-wider transition-all duration-200 border rounded";
   
   const variants = {
     primary: cn(
       "bg-primary text-primary-foreground border-primary",
-      "hover:bg-background hover:text-primary hover:border-glow-strong",
+      "hover:bg-accent hover:border-accent shadow-sm",
       "disabled:opacity-50 disabled:cursor-not-allowed"
     ),
     secondary: cn(
-      "bg-background text-primary border-primary/50",
-      "hover:border-primary hover:border-glow",
+      "bg-secondary text-secondary-foreground border-border",
+      "hover:bg-muted hover:border-primary/50",
       "disabled:opacity-50 disabled:cursor-not-allowed"
     ),
     ghost: cn(
       "bg-transparent text-primary border-transparent",
-      "hover:border-primary/50",
+      "hover:bg-secondary hover:border-border",
       "disabled:opacity-50 disabled:cursor-not-allowed"
     ),
   };
 
   const sizes = {
-    sm: "px-3 py-1 text-sm",
+    sm: "px-3 py-1.5 text-sm",
     md: "px-4 py-2 text-base",
     lg: "px-6 py-3 text-lg",
   };
@@ -47,17 +47,13 @@ export const TerminalButton: React.FC<TerminalButtonProps> = ({
         baseStyles,
         variants[variant],
         sizes[size],
-        "terminal-button",
+        "reader-button",
         className
       )}
       disabled={disabled}
       {...props}
     >
-      <span className="flex items-center gap-2">
-        <span className="text-glow">[</span>
-        {children}
-        <span className="text-glow">]</span>
-      </span>
+      {children}
     </button>
   );
 };

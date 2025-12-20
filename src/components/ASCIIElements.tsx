@@ -9,35 +9,13 @@ interface ASCIIBoxProps {
 
 export const ASCIIBox: React.FC<ASCIIBoxProps> = ({ children, className, title }) => {
   return (
-    <div className={cn("relative", className)}>
-      {/* Top border */}
-      <div className="text-primary text-glow font-terminal text-sm">
-        ╔{'═'.repeat(title ? Math.max(40 - title.length - 4, 10) : 50)}
-        {title && <span className="mx-2">[{title}]</span>}
-        {'═'.repeat(title ? 10 : 0)}╗
-      </div>
-      
-      {/* Content with side borders */}
-      <div className="relative">
-        <div className="absolute left-0 top-0 bottom-0 text-primary text-glow font-terminal flex flex-col">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <span key={i}>║</span>
-          ))}
+    <div className={cn("relative border border-border rounded-lg bg-card p-4", className)}>
+      {title && (
+        <div className="absolute -top-3 left-4 bg-card px-2 text-sm font-medium text-muted-foreground">
+          {title}
         </div>
-        <div className="absolute right-0 top-0 bottom-0 text-primary text-glow font-terminal flex flex-col">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <span key={i}>║</span>
-          ))}
-        </div>
-        <div className="px-6 py-2">
-          {children}
-        </div>
-      </div>
-      
-      {/* Bottom border */}
-      <div className="text-primary text-glow font-terminal text-sm">
-        ╚{'═'.repeat(60)}╝
-      </div>
+      )}
+      {children}
     </div>
   );
 };
@@ -46,44 +24,30 @@ interface ASCIILoaderProps {
   text?: string;
 }
 
-export const ASCIILoader: React.FC<ASCIILoaderProps> = ({ text = "LOADING" }) => {
+export const ASCIILoader: React.FC<ASCIILoaderProps> = ({ text = "Loading" }) => {
   return (
     <div className="flex flex-col items-center gap-4 py-8">
-      <div className="text-primary text-glow font-terminal text-2xl animate-pulse">
-        ████████████████
+      <div className="w-48 h-2 bg-secondary rounded-full overflow-hidden">
+        <div className="h-full bg-primary rounded-full animate-pulse w-2/3" />
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-primary font-terminal text-xl">[</span>
-        <span className="text-primary font-terminal text-xl glow-pulse">
-          {text}
+        <span className="text-foreground font-mono text-lg">
+          {text}...
         </span>
-        <span className="text-primary font-terminal text-xl loading-dots"></span>
-        <span className="text-primary font-terminal text-xl">]</span>
       </div>
-      <pre className="text-primary/60 text-glow font-terminal text-xs">
-{`   ___________
-  /           \\
- /  O     O   \\
-|      ^      |
-|   \\_____/   |
- \\           /
-  \\_________/
-     ROVER`}
-      </pre>
+      <div className="text-6xl mt-2">🤖</div>
     </div>
   );
 };
 
 export const ASCIIDivider: React.FC<{ className?: string }> = ({ className }) => {
   return (
-    <div className={cn("text-primary/50 font-terminal text-sm text-center py-2", className)}>
-      ═══════════════════════════════════════════════════════════
-    </div>
+    <div className={cn("border-t border-border my-4", className)} />
   );
 };
 
 export const BlinkingCursor: React.FC = () => {
   return (
-    <span className="inline-block w-3 h-5 bg-primary animate-blink ml-1" />
+    <span className="inline-block w-0.5 h-5 bg-primary animate-pulse ml-1" />
   );
 };

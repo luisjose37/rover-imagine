@@ -6,7 +6,7 @@ import { StoryDisplay } from '@/components/StoryDisplay';
 import { TerminalButton } from '@/components/TerminalButton';
 import { ASCIILoader, ASCIIDivider } from '@/components/ASCIIElements';
 import { TerminalInput } from '@/components/TerminalInput';
-import { WordCountSelector } from '@/components/WordCountSelector';
+import { WordCountSelector, WordCountOption } from '@/components/WordCountSelector';
 interface NFT {
   identifier: string;
   name: string;
@@ -26,7 +26,7 @@ const Index = () => {
   const [tokenId, setTokenId] = useState('');
   const [selectedNFT, setSelectedNFT] = useState<NFT | null>(null);
   const [story, setStory] = useState('');
-  const [wordCount, setWordCount] = useState<500 | 1000 | 1500>(500);
+  const [wordCount, setWordCount] = useState<WordCountOption>(500);
   const [isLoadingNFT, setIsLoadingNFT] = useState(false);
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
   const fetchNFT = async () => {

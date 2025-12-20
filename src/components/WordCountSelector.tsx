@@ -1,16 +1,20 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
+export type WordCountOption = 100 | 250 | 500 | 1000 | 1500;
+
 interface WordCountSelectorProps {
-  value: 500 | 1000 | 1500;
-  onChange: (value: 500 | 1000 | 1500) => void;
+  value: WordCountOption;
+  onChange: (value: WordCountOption) => void;
   disabled?: boolean;
 }
 
-const options: Array<{ value: 500 | 1000 | 1500; label: string }> = [
-  { value: 500, label: '500 WORDS' },
-  { value: 1000, label: '1000 WORDS' },
-  { value: 1500, label: '1500 WORDS' },
+const options: Array<{ value: WordCountOption; label: string }> = [
+  { value: 100, label: '100' },
+  { value: 250, label: '250' },
+  { value: 500, label: '500' },
+  { value: 1000, label: '1000' },
+  { value: 1500, label: '1500' },
 ];
 
 export const WordCountSelector: React.FC<WordCountSelectorProps> = ({

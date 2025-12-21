@@ -27,8 +27,8 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   };
 
   return (
-    <div className={cn("font-terminal", className)}>
-      <label className="block text-muted-foreground text-sm mb-1">
+    <div className={cn("font-terminal w-full sm:w-auto", className)}>
+      <label className="block text-muted-foreground text-xs sm:text-sm mb-1">
         {">"} {label}:
       </label>
       <div className="relative">
@@ -44,7 +44,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
           disabled={disabled}
           className={cn(
             "w-full bg-background border border-primary/50 text-primary text-glow",
-            "pl-8 pr-4 py-2 font-terminal text-lg",
+            "pl-8 pr-4 py-2 font-terminal text-base sm:text-lg",
             "placeholder:text-muted-foreground/50",
             "focus:outline-none focus:border-primary focus:border-glow",
             "disabled:opacity-50 disabled:cursor-not-allowed",

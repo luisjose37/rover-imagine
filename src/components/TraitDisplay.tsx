@@ -21,26 +21,30 @@ export const TraitDisplay: React.FC<TraitDisplayProps> = ({ traits, className })
   }
 
   return (
-    <div className={cn("space-y-1 font-terminal flex flex-col items-center", className)}>
-      <div className="text-primary text-glow text-sm mb-2">
+    <div className={cn("space-y-1 font-terminal flex flex-col items-center w-full", className)}>
+      <div className="text-primary text-glow text-xs sm:text-sm mb-2 hidden sm:block">
         ┌─[ ROVER SPECIFICATIONS ]─────────────────┐
       </div>
+      <div className="text-primary text-glow text-xs mb-2 sm:hidden">
+        ─[ ROVER SPECS ]─
+      </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 w-full max-w-xl">
         {traits.map((trait, index) => (
-          <div key={index} className="flex items-start gap-2">
-            <span className="text-muted-foreground">├─</span>
-            <span className="text-muted-foreground uppercase text-sm">
+          <div key={index} className="flex items-start gap-1 sm:gap-2 text-xs sm:text-sm">
+            <span className="text-muted-foreground hidden sm:inline">├─</span>
+            <span className="text-muted-foreground sm:hidden">•</span>
+            <span className="text-muted-foreground uppercase truncate">
               {trait.trait_type}:
             </span>
-            <span className="text-primary text-glow">
+            <span className="text-primary text-glow truncate">
               {trait.value}
             </span>
           </div>
         ))}
       </div>
       
-      <div className="text-primary text-glow text-sm mt-2">
+      <div className="text-primary text-glow text-xs sm:text-sm mt-2 hidden sm:block">
         └──────────────────────────────────────────┘
       </div>
     </div>

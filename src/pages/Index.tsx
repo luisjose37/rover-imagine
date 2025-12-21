@@ -9,10 +9,9 @@ import { TerminalInput } from '@/components/TerminalInput';
 import { WordCountSelector, WordCountOption } from '@/components/WordCountSelector';
 import { BackgroundMusic } from '@/components/BackgroundMusic';
 import { BattleSimulator } from '@/components/BattleSimulator';
-import { TraitLeaderboard } from '@/components/TraitLeaderboard';
 import { cn } from '@/lib/utils';
 
-type AppMode = 'story' | 'battle' | 'leaderboard';
+type AppMode = 'story' | 'battle';
 
 interface NFT {
   identifier: string;
@@ -167,19 +166,13 @@ const Index = () => {
 
         {/* Mode Tabs */}
         <div className="border-b border-primary/30 flex">
-          <button onClick={() => setAppMode('story')} className={cn("flex-1 py-3 font-terminal text-xs sm:text-sm transition-all", appMode === 'story' ? "text-primary text-glow bg-primary/10 border-b-2 border-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}>
-            STORY
+          <button onClick={() => setAppMode('story')} className={cn("flex-1 py-3 font-terminal text-sm sm:text-base transition-all", appMode === 'story' ? "text-primary text-glow bg-primary/10 border-b-2 border-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}>
+            STORY GENERATOR
           </button>
-          <button onClick={() => setAppMode('battle')} className={cn("flex-1 py-3 font-terminal text-xs sm:text-sm transition-all", appMode === 'battle' ? "text-primary text-glow bg-primary/10 border-b-2 border-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}>
-            BATTLE
-          </button>
-          <button onClick={() => setAppMode('leaderboard')} className={cn("flex-1 py-3 font-terminal text-xs sm:text-sm transition-all", appMode === 'leaderboard' ? "text-primary text-glow bg-primary/10 border-b-2 border-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}>
-            TRAITS
+          <button onClick={() => setAppMode('battle')} className={cn("flex-1 py-3 font-terminal text-sm sm:text-base transition-all", appMode === 'battle' ? "text-primary text-glow bg-primary/10 border-b-2 border-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}>
+            BATTLE SIMULATOR
           </button>
         </div>
-
-        {/* Leaderboard Mode */}
-        {appMode === 'leaderboard' && <TraitLeaderboard />}
 
         {/* Battle Simulator Mode */}
         {appMode === 'battle' && <BattleSimulator />}

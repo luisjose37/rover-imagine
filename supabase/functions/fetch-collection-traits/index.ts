@@ -7,7 +7,6 @@ const corsHeaders = {
 
 const CONTRACT_ADDRESS = '0xe0e7f149959c6cac0ddc2cb4ab27942bffda1eb4';
 const COLLECTION_SLUG = 'rovers-by-mycobiotics-ltd';
-const TOTAL_SUPPLY = 5000;
 
 // Cache for trait data (in-memory, resets on cold start)
 let traitCache: Record<string, Record<string, number>> | null = null;
@@ -31,102 +30,70 @@ serve(async (req) => {
     const now = Date.now();
     if (traitCache && (now - cacheTimestamp) < CACHE_TTL) {
       console.log('Returning cached trait data');
-      return new Response(JSON.stringify({ traits: traitCache, totalSupply: TOTAL_SUPPLY, cached: true }), {
+      return new Response(JSON.stringify({ traits: traitCache, cached: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Fetch collection data first to get trait counts from the collection metadata
-    const collectionUrl = `https://api.opensea.io/api/v2/collections/${COLLECTION_SLUG}`;
+    // Fetch collection stats which includes trait counts
+    const url = `https://api.opensea.io/api/v2/collections/${COLLECTION_SLUG}`;
     
-    console.log('Fetching collection data from OpenSea:', collectionUrl);
+    console.log('Fetching collection data from OpenSea:', url);
 
-    const collectionResponse = await fetch(collectionUrl, {
+    const response = await fetch(url, {
       headers: {
         'X-API-KEY': OPENSEA_API_KEY,
         'Accept': 'application/json',
       },
     });
 
-    if (!collectionResponse.ok) {
-      const errorText = await collectionResponse.text();
-      console.error('OpenSea collection API error:', collectionResponse.status, errorText);
-      throw new Error(`OpenSea API error: ${collectionResponse.status}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenSea API error:', response.status, errorText);
+      throw new Error(`OpenSea API error: ${response.status}`);
     }
 
-    const collectionData = await collectionResponse.json();
+    const data = await response.json();
     console.log('Collection data received');
 
-    // Check if traits are in collection response
+    // Get total supply from collection
+    const totalSupply = data.total_supply || 5000; // Default to 5000 if not available
+
+    // Now fetch traits from the traits endpoint
+    const traitsUrl = `https://api.opensea.io/api/v2/traits/${COLLECTION_SLUG}`;
+    
+    console.log('Fetching traits from OpenSea:', traitsUrl);
+    
+    const traitsResponse = await fetch(traitsUrl, {
+      headers: {
+        'X-API-KEY': OPENSEA_API_KEY,
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!traitsResponse.ok) {
+      const errorText = await traitsResponse.text();
+      console.error('OpenSea traits API error:', traitsResponse.status, errorText);
+      throw new Error(`OpenSea traits API error: ${traitsResponse.status}`);
+    }
+
+    const traitsData = await traitsResponse.json();
+    console.log('Traits data received:', JSON.stringify(traitsData, null, 2));
+
+    // Process traits into a lookup table: { traitType: { traitValue: count } }
     const traitLookup: Record<string, Record<string, number>> = {};
 
-    // OpenSea v2 includes traits in the collection response
-    if (collectionData.traits) {
-      console.log('Found traits in collection data');
-      for (const [traitType, traitValues] of Object.entries(collectionData.traits)) {
+    if (traitsData.categories) {
+      for (const category of traitsData.categories) {
+        const traitType = category.trait_type;
         traitLookup[traitType] = {};
-        for (const [value, count] of Object.entries(traitValues as Record<string, number>)) {
-          traitLookup[traitType][value] = count;
-        }
-      }
-    } else {
-      console.log('No traits in collection data, sampling NFTs...');
-      
-      // Fallback: Sample NFTs to build trait counts
-      // Fetch multiple pages of NFTs to get a good sample
-      const sampleSize = 200; // Sample 200 NFTs
-      let cursor: string | null = null;
-      const allTraits: Array<{ trait_type: string; value: string }> = [];
-      
-      for (let i = 0; i < 2; i++) { // 2 pages of 100 each
-        const nftsUrl: string = `https://api.opensea.io/api/v2/collection/${COLLECTION_SLUG}/nfts?limit=100${cursor ? `&next=${cursor}` : ''}`;
         
-        console.log('Fetching NFTs page', i + 1);
-        
-        const nftsResponse: Response = await fetch(nftsUrl, {
-          headers: {
-            'X-API-KEY': OPENSEA_API_KEY,
-            'Accept': 'application/json',
-          },
-        });
-
-        if (!nftsResponse.ok) {
-          console.error('Failed to fetch NFTs:', nftsResponse.status);
-          break;
-        }
-
-        const nftsData: { nfts?: Array<{ traits?: Array<{ trait_type: string; value: string }> }>; next?: string } = await nftsResponse.json();
-        
-        for (const nft of nftsData.nfts || []) {
-          if (nft.traits) {
-            allTraits.push(...nft.traits);
+        if (category.counts) {
+          for (const trait of category.counts) {
+            traitLookup[traitType][trait.value] = trait.count;
           }
         }
-        
-        cursor = nftsData.next || null;
-        if (!cursor) break;
-        
-        // Small delay between requests
-        await new Promise(r => setTimeout(r, 200));
       }
-
-      console.log('Collected traits from', allTraits.length, 'trait instances');
-
-      // Count occurrences
-      for (const trait of allTraits) {
-        if (!traitLookup[trait.trait_type]) {
-          traitLookup[trait.trait_type] = {};
-        }
-        traitLookup[trait.trait_type][trait.value] = (traitLookup[trait.trait_type][trait.value] || 0) + 1;
-      }
-
-      // Scale counts to total supply (since we only sampled)
-      const sampledNfts = allTraits.length / Object.keys(traitLookup).length || 1;
-      const scaleFactor = TOTAL_SUPPLY / sampledNfts;
-      
-      console.log('Sample size:', sampledNfts, 'Scale factor:', scaleFactor);
-      
-      // Note: For accuracy, we're keeping actual counts. The front-end will calculate rarity properly.
     }
 
     // Cache the result
@@ -137,7 +104,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       traits: traitLookup, 
-      totalSupply: TOTAL_SUPPLY,
+      totalSupply,
       cached: false 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

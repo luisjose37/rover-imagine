@@ -216,18 +216,24 @@ export const BattleSimulator: React.FC = () => {
             <div className="text-primary font-terminal text-xs mb-2 text-center">
               ─[ TRAITS ({stats.traits.length}) ]─
             </div>
-            {stats.traits.map((trait, idx) => <div key={idx} className={cn("flex items-center justify-between text-xs font-terminal p-1 border", trait === stats.dominantTrait ? "border-primary bg-primary/20" : "border-primary/20")}>
-                <div className="flex-1 min-w-0">
-                  <div className="text-muted-foreground truncate">{trait.trait_type}</div>
-                  <div className="text-primary truncate">{trait.value}</div>
-                </div>
-                <div className="text-right ml-2">
-                  <div className="text-muted-foreground">
-                    {trait.rarity}% {trait.count !== undefined && <span className="text-primary/50">({trait.count}/5000)</span>}
-                  </div>
-                  <div className={cn(trait === stats.dominantTrait ? "text-primary text-glow" : "text-foreground")}>
+            {stats.traits.map((trait, idx) => <div key={idx} className={cn("flex flex-col text-xs font-terminal p-2 border gap-1", trait === stats.dominantTrait ? "border-primary bg-primary/20" : "border-primary/20")}>
+                <div className="flex items-center justify-between">
+                  <div className="text-muted-foreground">{trait.trait_type}</div>
+                  <div className={cn("font-bold", trait === stats.dominantTrait ? "text-primary text-glow" : "text-foreground")}>
                     {trait.power} PWR
                   </div>
+                </div>
+                <div className="text-primary">{trait.value}</div>
+                <div className="text-muted-foreground/70 text-[10px] border-t border-primary/10 pt-1 mt-1">
+                  <span className="text-primary/60">100</span>
+                  <span> - </span>
+                  <span className="text-primary/60">{trait.rarity}%</span>
+                  <span className="text-muted-foreground/50"> rarity</span>
+                  <span> = </span>
+                  <span className="text-primary">{trait.power}</span>
+                  {trait.count !== undefined && trait.count > 0 && (
+                    <span className="ml-2 text-muted-foreground/50">({trait.count}/5000 have this)</span>
+                  )}
                 </div>
               </div>)}
           </div>}

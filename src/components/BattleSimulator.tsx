@@ -247,7 +247,7 @@ export const BattleSimulator: React.FC = () => {
             {">"} SELECT TWO ROVERS FOR BATTLE
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-start">
             {/* Rover 1 Input */}
             <div className="border border-primary/30 p-4">
               <div className="text-primary font-terminal text-sm mb-3 text-center">ROVER 1</div>
@@ -386,7 +386,7 @@ export const BattleSimulator: React.FC = () => {
           </div>
 
           {/* Rovers Side by Side */}
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col md:flex-row gap-4 items-start">
             <RoverCard
               rover={rover1}
               stats={battleResult.rover1Stats}
@@ -452,7 +452,7 @@ export const BattleSimulator: React.FC = () => {
             {">"} ROVERS READY FOR BATTLE
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col md:flex-row gap-4 items-start">
             <div className="flex-1 border border-primary/30 p-4 text-center">
               <div className="relative aspect-square w-full max-w-[350px] mx-auto border border-primary overflow-hidden mb-3">
                 {rover1.image_url?.endsWith('.mp4') ? (

@@ -33,25 +33,43 @@ serve(async (req) => {
 
     console.log('Fetching NFT from OpenSea:', url);
 
-    const response = await fetch(url, {
-      headers: {
-        'X-API-KEY': OPENSEA_API_KEY,
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenSea API error:', response.status, errorText);
+    let response: Response;
+    let retries = 3;
+    
+    for (let attempt = 0; attempt < retries; attempt++) {
+      response = await fetch(url, {
+        headers: {
+          'X-API-KEY': OPENSEA_API_KEY,
+          'Accept': 'application/json',
+        },
+      });
       
-      if (response.status === 404) {
+      // If rate limited, wait and retry
+      if (response.status === 429) {
+        console.log(`Rate limited, attempt ${attempt + 1}/${retries}, waiting...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        continue;
+      }
+      
+      break;
+    }
+
+    if (!response!.ok) {
+      const errorText = await response!.text();
+      console.error('OpenSea API error:', response!.status, errorText);
+      
+      if (response!.status === 404) {
         throw new Error(`Rover #${tokenId} not found. Please check the token ID.`);
       }
       
-      throw new Error(`OpenSea API error: ${response.status}`);
+      if (response!.status === 429) {
+        throw new Error('Rate limited by OpenSea. Please wait a moment.');
+      }
+      
+      throw new Error(`OpenSea API error: ${response!.status}`);
     }
 
-    const data = await response.json();
+    const data = await response!.json();
     console.log('OpenSea response received for token:', tokenId);
     console.log('NFT data:', JSON.stringify(data, null, 2));
 

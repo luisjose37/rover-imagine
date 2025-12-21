@@ -51,12 +51,16 @@ const fetchTraitData = async (apiKey: string): Promise<Record<string, Record<str
   }
 
   const traitsData = await traitsResponse.json();
-  console.log('Traits data received from OpenSea');
+  console.log('Traits data received from OpenSea:', JSON.stringify(traitsData, null, 2));
 
   // Process traits into a lookup table: { traitType: { traitValue: count } }
   const traitLookup: Record<string, Record<string, number>> = {};
 
-  if (traitsData.categories) {
+  // Handle different OpenSea API response structures
+  // Structure 1: { categories: [...] }
+  // Structure 2: { counts: { trait_type: { value: count } } }
+  // Structure 3: Direct object { trait_type: [...values] }
+  if (traitsData.categories && Array.isArray(traitsData.categories)) {
     for (const category of traitsData.categories) {
       const traitType = category.trait_type;
       traitLookup[traitType] = {};
@@ -64,6 +68,28 @@ const fetchTraitData = async (apiKey: string): Promise<Record<string, Record<str
       if (category.counts) {
         for (const trait of category.counts) {
           traitLookup[traitType][trait.value] = trait.count;
+        }
+      }
+    }
+  } else if (traitsData.counts) {
+    // Alternative structure from OpenSea API
+    for (const [traitType, values] of Object.entries(traitsData.counts)) {
+      traitLookup[traitType] = {};
+      if (typeof values === 'object' && values !== null) {
+        for (const [value, count] of Object.entries(values as Record<string, number>)) {
+          traitLookup[traitType][value] = count as number;
+        }
+      }
+    }
+  } else {
+    // Try to parse as direct trait object
+    for (const [key, value] of Object.entries(traitsData)) {
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        traitLookup[key] = {};
+        for (const [traitValue, count] of Object.entries(value as Record<string, number>)) {
+          if (typeof count === 'number') {
+            traitLookup[key][traitValue] = count;
+          }
         }
       }
     }

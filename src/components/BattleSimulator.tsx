@@ -155,11 +155,7 @@ export const BattleSimulator: React.FC = () => {
   // Check if rover is in top 5% power tier (threshold: ~600+ power)
   const isTopTierPower = (traits: Array<{ trait_type: string; value: string }> | undefined) => {
     if (!traits) return false;
-    const filteredTraits = traits.filter(t => 
-      t.trait_type.toLowerCase() !== 'honorary' && 
-      t.trait_type.toLowerCase() !== 'biome'
-    );
-    const power = calculatePowerScore(filteredTraits);
+    const power = calculatePowerScore(traits);
     return power >= 600;
   };
   const RoverCard: React.FC<{
@@ -256,8 +252,8 @@ export const BattleSimulator: React.FC = () => {
                   )}
                   {/* Trait List */}
                   {rover1.traits && rover1.traits.length > 0 && <div className="text-left mt-3 space-y-1">
-                      <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover1.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').length}) ]─</div>
-                      {rover1.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').map((trait, idx) => <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
+                      <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover1.traits.length}) ]─</div>
+                      {rover1.traits.map((trait, idx) => <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
                           <span className="text-muted-foreground truncate">{trait.trait_type}</span>
                           <span className="text-primary truncate ml-2">{trait.value}</span>
                         </div>)}
@@ -296,8 +292,8 @@ export const BattleSimulator: React.FC = () => {
                   )}
                   {/* Trait List */}
                   {rover2.traits && rover2.traits.length > 0 && <div className="text-left mt-3 space-y-1">
-                      <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover2.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').length}) ]─</div>
-                      {rover2.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').map((trait, idx) => <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
+                      <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover2.traits.length}) ]─</div>
+                      {rover2.traits.map((trait, idx) => <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
                           <span className="text-muted-foreground truncate">{trait.trait_type}</span>
                           <span className="text-primary truncate ml-2">{trait.value}</span>
                         </div>)}
@@ -402,8 +398,8 @@ export const BattleSimulator: React.FC = () => {
                 </div>
               )}
               {rover1.traits && rover1.traits.length > 0 && <div className="text-left mt-3 space-y-1">
-                  <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover1.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').length}) ]─</div>
-                  {rover1.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').map((trait, idx) => <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
+                  <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover1.traits.length}) ]─</div>
+                  {rover1.traits.map((trait, idx) => <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
                       <span className="text-muted-foreground truncate">{trait.trait_type}</span>
                       <span className="text-primary truncate ml-2">{trait.value}</span>
                     </div>)}
@@ -425,8 +421,8 @@ export const BattleSimulator: React.FC = () => {
                 </div>
               )}
               {rover2.traits && rover2.traits.length > 0 && <div className="text-left mt-3 space-y-1">
-                  <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover2.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').length}) ]─</div>
-                  {rover2.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').map((trait, idx) => <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
+                  <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover2.traits.length}) ]─</div>
+                  {rover2.traits.map((trait, idx) => <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
                       <span className="text-muted-foreground truncate">{trait.trait_type}</span>
                       <span className="text-primary truncate ml-2">{trait.value}</span>
                     </div>)}

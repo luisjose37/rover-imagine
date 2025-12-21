@@ -39,3 +39,6 @@ verify_jwt = false
 
 [functions.generate-mission]
 verify_jwt = false
+
+[functions.simulate-battle]
+verify_jwt = false

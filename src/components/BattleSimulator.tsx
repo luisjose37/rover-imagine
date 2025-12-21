@@ -133,6 +133,35 @@ export const BattleSimulator: React.FC = () => {
     setRover2(null);
     setBattleResult(null);
   };
+
+  const generateRandomTokenId = () => {
+    return Math.floor(Math.random() * 5555) + 1;
+  };
+
+  // Calculate power score for a rover (same logic as backend)
+  const calculatePowerScore = (traits: Array<{ trait_type: string; value: string }>) => {
+    let totalPower = 0;
+    traits.forEach(trait => {
+      const hash = (trait.trait_type + trait.value).split('').reduce((acc, char) => {
+        return ((acc << 5) - acc) + char.charCodeAt(0);
+      }, 0);
+      const rarity = Math.abs(hash % 30) + 1;
+      const power = Math.round(100 - (rarity * 3.33));
+      totalPower += power;
+    });
+    return totalPower;
+  };
+
+  // Check if rover is in top 5% power tier (threshold: ~600+ power)
+  const isTopTierPower = (traits: Array<{ trait_type: string; value: string }> | undefined) => {
+    if (!traits) return false;
+    const filteredTraits = traits.filter(t => 
+      t.trait_type.toLowerCase() !== 'honorary' && 
+      t.trait_type.toLowerCase() !== 'biome'
+    );
+    const power = calculatePowerScore(filteredTraits);
+    return power >= 600;
+  };
   const RoverCard: React.FC<{
     rover: NFT | null;
     stats: RoverStats | null;
@@ -168,6 +197,11 @@ export const BattleSimulator: React.FC = () => {
           <div className="text-muted-foreground font-terminal text-xs">
             TOKEN #{rover.identifier}
           </div>
+          {isTopTierPower(rover.traits) && (
+            <div className="inline-block bg-primary/20 border border-primary px-2 py-0.5 mt-1">
+              <span className="text-primary text-glow font-terminal text-xs animate-pulse">★ TOP 5% POWER ★</span>
+            </div>
+          )}
         </div>
 
         {/* Power Score */}
@@ -214,7 +248,12 @@ export const BattleSimulator: React.FC = () => {
                     {rover1.image_url?.endsWith('.mp4') ? <video src={rover1.image_url} autoPlay loop muted playsInline className="w-full h-full object-cover" /> : <img src={rover1.image_url} alt={rover1.name} className="w-full h-full object-cover" />}
                   </div>
                   <div className="text-primary text-glow font-terminal text-lg">{rover1.name}</div>
-                  <div className="text-muted-foreground font-terminal text-xs mb-3">TOKEN #{rover1.identifier}</div>
+                  <div className="text-muted-foreground font-terminal text-xs mb-1">TOKEN #{rover1.identifier}</div>
+                  {isTopTierPower(rover1.traits) && (
+                    <div className="inline-block bg-primary/20 border border-primary px-2 py-0.5 mb-2">
+                      <span className="text-primary text-glow font-terminal text-xs animate-pulse">★ TOP 5% POWER ★</span>
+                    </div>
+                  )}
                   {/* Trait List */}
                   {rover1.traits && rover1.traits.length > 0 && <div className="text-left mt-3 space-y-1">
                       <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover1.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').length}) ]─</div>
@@ -225,9 +264,14 @@ export const BattleSimulator: React.FC = () => {
                     </div>}
                 </div> : <div className="flex flex-col gap-3">
                   <TerminalInput label="TOKEN ID" value={tokenId1} onChange={setTokenId1} placeholder="e.g., 1234" onSubmit={() => fetchRover(tokenId1, setRover1, setIsLoadingRover1)} disabled={isLoadingRover1} />
-                  <TerminalButton onClick={() => fetchRover(tokenId1, setRover1, setIsLoadingRover1)} disabled={isLoadingRover1 || !tokenId1.trim()} variant="primary" className="w-full">
-                    {isLoadingRover1 ? 'SCANNING...' : 'LOCATE'}
-                  </TerminalButton>
+                  <div className="flex gap-2">
+                    <TerminalButton onClick={() => fetchRover(tokenId1, setRover1, setIsLoadingRover1)} disabled={isLoadingRover1 || !tokenId1.trim()} variant="primary" className="flex-1">
+                      {isLoadingRover1 ? 'SCANNING...' : 'LOCATE'}
+                    </TerminalButton>
+                    <TerminalButton onClick={() => setTokenId1(String(generateRandomTokenId()))} disabled={isLoadingRover1} variant="secondary" className="whitespace-nowrap">
+                      🎲 RANDOM
+                    </TerminalButton>
+                  </div>
                 </div>}
             </div>
 
@@ -244,7 +288,12 @@ export const BattleSimulator: React.FC = () => {
                     {rover2.image_url?.endsWith('.mp4') ? <video src={rover2.image_url} autoPlay loop muted playsInline className="w-full h-full object-cover" /> : <img src={rover2.image_url} alt={rover2.name} className="w-full h-full object-cover" />}
                   </div>
                   <div className="text-primary text-glow font-terminal text-lg">{rover2.name}</div>
-                  <div className="text-muted-foreground font-terminal text-xs mb-3">TOKEN #{rover2.identifier}</div>
+                  <div className="text-muted-foreground font-terminal text-xs mb-1">TOKEN #{rover2.identifier}</div>
+                  {isTopTierPower(rover2.traits) && (
+                    <div className="inline-block bg-primary/20 border border-primary px-2 py-0.5 mb-2">
+                      <span className="text-primary text-glow font-terminal text-xs animate-pulse">★ TOP 5% POWER ★</span>
+                    </div>
+                  )}
                   {/* Trait List */}
                   {rover2.traits && rover2.traits.length > 0 && <div className="text-left mt-3 space-y-1">
                       <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover2.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').length}) ]─</div>
@@ -255,9 +304,14 @@ export const BattleSimulator: React.FC = () => {
                     </div>}
                 </div> : <div className="flex flex-col gap-3">
                   <TerminalInput label="TOKEN ID" value={tokenId2} onChange={setTokenId2} placeholder="e.g., 5678" onSubmit={() => fetchRover(tokenId2, setRover2, setIsLoadingRover2)} disabled={isLoadingRover2} />
-                  <TerminalButton onClick={() => fetchRover(tokenId2, setRover2, setIsLoadingRover2)} disabled={isLoadingRover2 || !tokenId2.trim()} variant="primary" className="w-full">
-                    {isLoadingRover2 ? 'SCANNING...' : 'LOCATE'}
-                  </TerminalButton>
+                  <div className="flex gap-2">
+                    <TerminalButton onClick={() => fetchRover(tokenId2, setRover2, setIsLoadingRover2)} disabled={isLoadingRover2 || !tokenId2.trim()} variant="primary" className="flex-1">
+                      {isLoadingRover2 ? 'SCANNING...' : 'LOCATE'}
+                    </TerminalButton>
+                    <TerminalButton onClick={() => setTokenId2(String(generateRandomTokenId()))} disabled={isLoadingRover2} variant="secondary" className="whitespace-nowrap">
+                      🎲 RANDOM
+                    </TerminalButton>
+                  </div>
                 </div>}
             </div>
           </div>
@@ -342,7 +396,11 @@ export const BattleSimulator: React.FC = () => {
                 {rover1.image_url?.endsWith('.mp4') ? <video src={rover1.image_url} autoPlay loop muted playsInline className="w-full h-full object-cover" /> : <img src={rover1.image_url} alt={rover1.name} className="w-full h-full object-cover" />}
               </div>
               <div className="text-primary text-glow font-terminal text-lg">{rover1.name}</div>
-              
+              {isTopTierPower(rover1.traits) && (
+                <div className="inline-block bg-primary/20 border border-primary px-2 py-0.5 mt-1">
+                  <span className="text-primary text-glow font-terminal text-xs animate-pulse">★ TOP 5% POWER ★</span>
+                </div>
+              )}
               {rover1.traits && rover1.traits.length > 0 && <div className="text-left mt-3 space-y-1">
                   <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover1.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').length}) ]─</div>
                   {rover1.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').map((trait, idx) => <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
@@ -361,7 +419,11 @@ export const BattleSimulator: React.FC = () => {
                 {rover2.image_url?.endsWith('.mp4') ? <video src={rover2.image_url} autoPlay loop muted playsInline className="w-full h-full object-cover" /> : <img src={rover2.image_url} alt={rover2.name} className="w-full h-full object-cover" />}
               </div>
               <div className="text-primary text-glow font-terminal text-lg">{rover2.name}</div>
-              
+              {isTopTierPower(rover2.traits) && (
+                <div className="inline-block bg-primary/20 border border-primary px-2 py-0.5 mt-1">
+                  <span className="text-primary text-glow font-terminal text-xs animate-pulse">★ TOP 5% POWER ★</span>
+                </div>
+              )}
               {rover2.traits && rover2.traits.length > 0 && <div className="text-left mt-3 space-y-1">
                   <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover2.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').length}) ]─</div>
                   {rover2.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').map((trait, idx) => <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">

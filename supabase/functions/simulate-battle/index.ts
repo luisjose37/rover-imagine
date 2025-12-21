@@ -16,30 +16,79 @@ interface RoverData {
   traits: Trait[];
 }
 
-// Simulated rarity percentages based on trait types
-// In a real implementation, you'd fetch this from OpenSea collection stats
-const getTraitRarity = (traitType: string, value: string): number => {
-  // Common traits have higher percentages (less rare = less powerful)
-  // Rare traits have lower percentages (more rare = more powerful)
-  const hash = (traitType + value).split('').reduce((a, b) => {
-    a = ((a << 5) - a) + b.charCodeAt(0);
-    return a & a;
-  }, 0);
-  
-  // Generate a pseudo-random rarity between 1% and 30%
-  const rarity = Math.abs(hash % 29) + 1;
-  return rarity;
+// Trait rarity lookup from OpenSea collection data
+type TraitLookup = Record<string, Record<string, number>>;
+
+const COLLECTION_SLUG = 'rovers-by-mycobiotics-ltd';
+const TOTAL_SUPPLY = 5000; // Rovers collection size
+
+// Fetch real trait counts from OpenSea
+const fetchTraitRarity = async (apiKey: string): Promise<TraitLookup> => {
+  try {
+    const traitsUrl = `https://api.opensea.io/api/v2/traits/${COLLECTION_SLUG}`;
+    
+    console.log('Fetching traits from OpenSea for rarity calculation');
+    
+    const traitsResponse = await fetch(traitsUrl, {
+      headers: {
+        'X-API-KEY': apiKey,
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!traitsResponse.ok) {
+      console.error('Failed to fetch traits, using fallback');
+      return {};
+    }
+
+    const traitsData = await traitsResponse.json();
+    
+    const traitLookup: TraitLookup = {};
+
+    if (traitsData.categories) {
+      for (const category of traitsData.categories) {
+        const traitType = category.trait_type;
+        traitLookup[traitType] = {};
+        
+        if (category.counts) {
+          for (const trait of category.counts) {
+            traitLookup[traitType][trait.value] = trait.count;
+          }
+        }
+      }
+    }
+
+    console.log('Loaded trait rarity data:', Object.keys(traitLookup).length, 'trait types');
+    return traitLookup;
+  } catch (error) {
+    console.error('Error fetching trait rarity:', error);
+    return {};
+  }
+};
+
+// Calculate rarity percentage from trait count
+const getTraitRarity = (traitLookup: TraitLookup, traitType: string, value: string): number => {
+  const typeData = traitLookup[traitType];
+  if (typeData && typeData[value] !== undefined) {
+    const count = typeData[value];
+    // Rarity as percentage of total supply
+    const rarityPercent = (count / TOTAL_SUPPLY) * 100;
+    return Math.round(rarityPercent * 10) / 10; // Round to 1 decimal
+  }
+  // Fallback: assume medium rarity if not found
+  return 15;
 };
 
 // Calculate power score from traits (lower rarity = higher power)
-const calculatePowerScore = (traits: Trait[]): { totalPower: number; traitPowers: Array<{ trait: Trait; rarity: number; power: number }> } => {
-  const traitPowers = traits
-    .map(trait => {
-      const rarity = getTraitRarity(trait.trait_type, trait.value);
-      // Lower rarity = higher power (inverse relationship)
-      const power = Math.round((30 - rarity) * 3.33); // Scale to 0-100
-      return { trait, rarity, power };
-    });
+const calculatePowerScore = (traits: Trait[], traitLookup: TraitLookup): { totalPower: number; traitPowers: Array<{ trait: Trait; rarity: number; power: number; count: number }> } => {
+  const traitPowers = traits.map(trait => {
+    const rarity = getTraitRarity(traitLookup, trait.trait_type, trait.value);
+    const count = traitLookup[trait.trait_type]?.[trait.value] || 0;
+    // Lower rarity = higher power (inverse relationship)
+    // If only 1% of NFTs have it, power is ~99. If 50% have it, power is ~50.
+    const power = Math.round(Math.max(0, 100 - rarity));
+    return { trait, rarity, power, count };
+  });
   
   const totalPower = traitPowers.reduce((sum, tp) => sum + tp.power, 0);
   
@@ -53,6 +102,7 @@ serve(async (req) => {
 
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const OPENSEA_API_KEY = Deno.env.get('OPENSEA_API_KEY');
     
     if (!LOVABLE_API_KEY) {
       throw new Error('AI API key is not configured');
@@ -64,9 +114,13 @@ serve(async (req) => {
       throw new Error('Two rovers are required for battle simulation');
     }
 
-    // Calculate power scores for both rovers
-    const rover1Stats = calculatePowerScore(rover1.traits || []);
-    const rover2Stats = calculatePowerScore(rover2.traits || []);
+    // Fetch real trait rarity data from OpenSea
+    const traitLookup = OPENSEA_API_KEY ? await fetchTraitRarity(OPENSEA_API_KEY) : {};
+    console.log('Using trait lookup with', Object.keys(traitLookup).length, 'trait types');
+
+    // Calculate power scores for both rovers using real rarity data
+    const rover1Stats = calculatePowerScore(rover1.traits || [], traitLookup);
+    const rover2Stats = calculatePowerScore(rover2.traits || [], traitLookup);
 
     // Find dominant trait for each rover
     const rover1DominantTrait = rover1Stats.traitPowers.reduce((max, tp) => tp.power > max.power ? tp : max, rover1Stats.traitPowers[0]);
@@ -176,7 +230,8 @@ Generate the battle log now. Include dramatic moments where traits clash. The do
           trait_type: tp.trait.trait_type,
           value: tp.trait.value,
           rarity: tp.rarity,
-          power: tp.power
+          power: tp.power,
+          count: tp.count
         })),
         dominantTrait: rover1DominantTrait ? {
           trait_type: rover1DominantTrait.trait.trait_type,
@@ -193,7 +248,8 @@ Generate the battle log now. Include dramatic moments where traits clash. The do
           trait_type: tp.trait.trait_type,
           value: tp.trait.value,
           rarity: tp.rarity,
-          power: tp.power
+          power: tp.power,
+          count: tp.count
         })),
         dominantTrait: rover2DominantTrait ? {
           trait_type: rover2DominantTrait.trait.trait_type,

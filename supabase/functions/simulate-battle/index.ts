@@ -34,7 +34,6 @@ const getTraitRarity = (traitType: string, value: string): number => {
 // Calculate power score from traits (lower rarity = higher power)
 const calculatePowerScore = (traits: Trait[]): { totalPower: number; traitPowers: Array<{ trait: Trait; rarity: number; power: number }> } => {
   const traitPowers = traits
-    .filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome')
     .map(trait => {
       const rarity = getTraitRarity(trait.trait_type, trait.value);
       // Lower rarity = higher power (inverse relationship)

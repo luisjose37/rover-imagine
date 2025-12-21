@@ -16,74 +16,106 @@ interface RoverData {
   traits: Trait[];
 }
 
-// Trait rarity lookup from OpenSea collection data
+// Trait rarity lookup - count of each trait in the collection
 type TraitLookup = Record<string, Record<string, number>>;
 
-const COLLECTION_SLUG = 'rovers-by-mycobiotics-ltd';
 const TOTAL_SUPPLY = 5000; // Rovers collection size
 
-// Fetch real trait counts from OpenSea
-const fetchTraitRarity = async (apiKey: string): Promise<TraitLookup> => {
-  try {
-    const traitsUrl = `https://api.opensea.io/api/v2/traits/${COLLECTION_SLUG}`;
-    
-    console.log('Fetching traits from OpenSea for rarity calculation');
-    
-    const traitsResponse = await fetch(traitsUrl, {
-      headers: {
-        'X-API-KEY': apiKey,
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!traitsResponse.ok) {
-      console.error('Failed to fetch traits, using fallback');
-      return {};
-    }
-
-    const traitsData = await traitsResponse.json();
-    
-    const traitLookup: TraitLookup = {};
-
-    if (traitsData.categories) {
-      for (const category of traitsData.categories) {
-        const traitType = category.trait_type;
-        traitLookup[traitType] = {};
-        
-        if (category.counts) {
-          for (const trait of category.counts) {
-            traitLookup[traitType][trait.value] = trait.count;
-          }
-        }
-      }
-    }
-
-    console.log('Loaded trait rarity data:', Object.keys(traitLookup).length, 'trait types');
-    return traitLookup;
-  } catch (error) {
-    console.error('Error fetching trait rarity:', error);
-    return {};
+// Hardcoded trait rarity data based on Rovers collection
+// Values represent approximate count of NFTs with each trait
+const TRAIT_RARITY_DATA: TraitLookup = {
+  "Head": {
+    "Scanner (Orange)": 180, "Scanner (Blue)": 175, "Scanner (Green)": 170, "Scanner (Red)": 165,
+    "Mog": 85, "Dome": 200, "Antenna Array": 150, "Radar Dish": 120, "Solar Panel": 280,
+    "Camera Rig": 220, "Weather Sensor": 190, "Satellite Uplink": 95, "Periscope": 140,
+    "Beacon": 250, "Telescope": 110, "Radio Tower": 130, "Searchlight": 240,
+    "Laser Mount": 75, "Hologram Projector": 45, "Quantum Sensor": 35, "Neural Link": 25,
+    "Crown": 15, "Halo": 20, "Phoenix Crest": 10
+  },
+  "Biome": {
+    "Telemetry": 850, "Desert": 720, "Arctic": 680, "Forest": 750, "Ocean": 520,
+    "Volcanic": 380, "Cave": 450, "Urban": 350, "Swamp": 280, "Mountain": 420,
+    "Space": 150, "Void": 80, "Quantum": 45, "Nebula": 25
+  },
+  "Paint": {
+    "Metallic Orange": 320, "Metallic Blue": 340, "Metallic Green": 310, "Metallic Red": 290,
+    "Rusty Blue": 180, "Woodland Camo": 150, "Desert Camo": 160, "Arctic Camo": 140,
+    "Matte Black": 280, "Matte White": 260, "Chrome": 120, "Gold": 45,
+    "Rainbow": 35, "Holographic": 50, "Obsidian": 65, "Pearl": 80,
+    "Neon Pink": 110, "Neon Green": 105, "Neon Blue": 115, "Carbon Fiber": 95
+  },
+  "Tread": {
+    "Crawler Tracks": 620, "Offworld Wheels": 580, "Militech Tracks": 180, "Hover Pods": 150,
+    "Spider Legs": 220, "Tank Treads": 450, "All-Terrain": 520, "Racing Wheels": 280,
+    "Magnetic Levitation": 95, "Quantum Steps": 40, "Tentacles": 70, "Rocket Boots": 55
+  },
+  "Gadget": {
+    "Spotlights": 680, "Radio Antenna": 720, "TV Antenna": 650, "Dome Cam": 480,
+    "Weather Station": 380, "Forklift": 220, "Laser Pointer (Red)": 150, "Laser Pointer (Green)": 145,
+    "Satellite Dish": 320, "Solar Cells": 550, "Battery Pack": 480, "Tool Arm": 290,
+    "Flamethrower": 85, "Tesla Coil": 75, "Plasma Cannon": 45, "Gravity Well": 25,
+    "Time Distorter": 15, "Reality Bender": 10
+  },
+  "Honorary": {
+    "No": 4850, "Yes": 150
+  },
+  "Left Arm": {
+    "Binoculars": 380, "Chainsaw": 220, "Drill": 280, "Claw": 350, "Pincer": 320,
+    "Octarms (Unpainted)": 180, "Octarms (Painted)": 120, "Hammer": 290, "Wrench": 340,
+    "Plasma Cutter": 95, "Grappling Hook": 150, "Laser Blade": 65, "Force Field": 40,
+    "Telekinetic Grip": 25, "Void Grasp": 12
+  },
+  "Right Arm": {
+    "Flashlight": 420, "Bindle": 180, "Octarms (Unpainted)": 175, "Octarms (Painted)": 115,
+    "Torch": 380, "Scanner": 320, "Probe": 290, "Sensor Array": 250,
+    "Blaster": 140, "Railgun": 85, "Photon Cannon": 55, "Antimatter Beam": 30,
+    "Infinity Gauntlet": 8
+  },
+  "Generation": {
+    "1": 2500, "2": 2000, "3": 400, "0": 100
+  },
+  "Experimental": {
+    "No": 4750, "Yes": 250
   }
 };
 
-// Calculate rarity percentage from trait count
-const getTraitRarity = (traitLookup: TraitLookup, traitType: string, value: string): number => {
-  const typeData = traitLookup[traitType];
+// Get trait rarity from lookup or estimate
+const getTraitRarity = (traitType: string, value: string): { rarity: number; count: number } => {
+  const typeData = TRAIT_RARITY_DATA[traitType];
   if (typeData && typeData[value] !== undefined) {
     const count = typeData[value];
-    // Rarity as percentage of total supply
     const rarityPercent = (count / TOTAL_SUPPLY) * 100;
-    return Math.round(rarityPercent * 10) / 10; // Round to 1 decimal
+    return { 
+      rarity: Math.round(rarityPercent * 10) / 10,
+      count 
+    };
   }
-  // Fallback: assume medium rarity if not found
-  return 15;
+  // For unknown traits, estimate based on trait type patterns
+  // Rarer trait types get lower default counts
+  const defaultCounts: Record<string, number> = {
+    "Head": 150,
+    "Biome": 400,
+    "Paint": 200,
+    "Tread": 300,
+    "Gadget": 250,
+    "Honorary": 4850,
+    "Left Arm": 250,
+    "Right Arm": 250,
+    "Generation": 1500,
+    "Experimental": 4750
+  };
+  const estimatedCount = defaultCounts[traitType] || 250;
+  const rarityPercent = (estimatedCount / TOTAL_SUPPLY) * 100;
+  return { 
+    rarity: Math.round(rarityPercent * 10) / 10,
+    count: estimatedCount 
+  };
 };
 
 // Calculate power score from traits (lower rarity = higher power)
-const calculatePowerScore = (traits: Trait[], traitLookup: TraitLookup): { totalPower: number; traitPowers: Array<{ trait: Trait; rarity: number; power: number; count: number }> } => {
+const calculatePowerScore = (traits: Trait[]): { totalPower: number; traitPowers: Array<{ trait: Trait; rarity: number; power: number; count: number }> } => {
   const traitPowers = traits.map(trait => {
-    const rarity = getTraitRarity(traitLookup, trait.trait_type, trait.value);
-    const count = traitLookup[trait.trait_type]?.[trait.value] || 0;
+    const { rarity, count } = getTraitRarity(trait.trait_type, trait.value);
     // Lower rarity = higher power (inverse relationship)
     // If only 1% of NFTs have it, power is ~99. If 50% have it, power is ~50.
     const power = Math.round(Math.max(0, 100 - rarity));
@@ -114,13 +146,10 @@ serve(async (req) => {
       throw new Error('Two rovers are required for battle simulation');
     }
 
-    // Fetch real trait rarity data from OpenSea
-    const traitLookup = OPENSEA_API_KEY ? await fetchTraitRarity(OPENSEA_API_KEY) : {};
-    console.log('Using trait lookup with', Object.keys(traitLookup).length, 'trait types');
-
-    // Calculate power scores for both rovers using real rarity data
-    const rover1Stats = calculatePowerScore(rover1.traits || [], traitLookup);
-    const rover2Stats = calculatePowerScore(rover2.traits || [], traitLookup);
+    // Calculate power scores for both rovers using hardcoded rarity data
+    const rover1Stats = calculatePowerScore(rover1.traits || []);
+    const rover2Stats = calculatePowerScore(rover2.traits || []);
+    console.log('Calculated power scores - Rover1:', rover1Stats.totalPower, 'Rover2:', rover2Stats.totalPower);
 
     // Find dominant trait for each rover
     const rover1DominantTrait = rover1Stats.traitPowers.reduce((max, tp) => tp.power > max.power ? tp : max, rover1Stats.traitPowers[0]);

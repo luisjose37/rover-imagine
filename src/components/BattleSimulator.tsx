@@ -4,6 +4,8 @@ import { TerminalWindow } from './TerminalWindow';
 import { TerminalButton } from './TerminalButton';
 import { TerminalInput } from './TerminalInput';
 import { ASCIILoader, ASCIIDivider } from './ASCIIElements';
+import { AlphaRovers } from './AlphaRovers';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 interface NFT {
@@ -239,7 +241,9 @@ export const BattleSimulator: React.FC = () => {
           </div>}
       </div>;
   };
-  return <div className="p-4 md:p-6">
+
+  const BattleContent = () => (
+    <>
       {/* Rover Input Section */}
       {!rover1 || !rover2 ? <div className="space-y-6">
           <div className="text-primary font-terminal text-base md:text-lg text-glow text-center">
@@ -447,5 +451,35 @@ export const BattleSimulator: React.FC = () => {
             </TerminalButton>
           </div>
         </div>}
-    </div>;
+    </>
+  );
+
+  return (
+    <div className="p-4 md:p-6">
+      <Tabs defaultValue="battle" className="w-full">
+        <TabsList className="w-full grid grid-cols-2 bg-background border border-primary/30 mb-6">
+          <TabsTrigger 
+            value="battle" 
+            className="font-terminal text-sm data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:text-glow"
+          >
+            ⚔ BATTLE
+          </TabsTrigger>
+          <TabsTrigger 
+            value="alphas" 
+            className="font-terminal text-sm data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:text-glow"
+          >
+            ★ ALPHA ROVERS
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="battle">
+          <BattleContent />
+        </TabsContent>
+        
+        <TabsContent value="alphas">
+          <AlphaRovers />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
 };

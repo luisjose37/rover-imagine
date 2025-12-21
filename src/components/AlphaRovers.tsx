@@ -2,12 +2,13 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { TerminalButton } from './TerminalButton';
 import { ASCIILoader } from './ASCIIElements';
+import { supabase } from '@/integrations/supabase/client';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const ALPHA_THRESHOLD = 13;
 const TOTAL_ROVERS = 5555;
-const BATCH_SIZE = 5; // Fetch 5 rovers in parallel
-const BATCH_DELAY = 300; // 300ms delay between batches
+const BATCH_SIZE = 5;
+const BATCH_DELAY = 300;
 
 interface NFT {
   identifier: string;
@@ -19,16 +20,75 @@ interface NFT {
   }>;
 }
 
+interface AlphaRover {
+  id: string;
+  token_id: string;
+  name: string;
+  image_url: string | null;
+  trait_count: number;
+  traits: NFT['traits'];
+  discovered_at: string;
+}
+
 export const AlphaRovers: React.FC = () => {
   const { toast } = useToast();
-  const [alphaRovers, setAlphaRovers] = useState<NFT[]>([]);
+  const [alphaRovers, setAlphaRovers] = useState<AlphaRover[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const abortRef = useRef(false);
-  const scannedIdsRef = useRef<Set<number>>(new Set());
+  const knownAlphaIds = useRef<Set<string>>(new Set());
 
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Load existing alphas from database on mount
+  useEffect(() => {
+    loadAlphaRovers();
+  }, []);
+
+  const loadAlphaRovers = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from('alpha_rovers')
+      .select('*')
+      .order('trait_count', { ascending: false });
+
+    if (error) {
+      console.error('Error loading alpha rovers:', error);
+    } else if (data) {
+      const alphas = data.map(row => ({
+        ...row,
+        traits: row.traits as NFT['traits']
+      }));
+      setAlphaRovers(alphas);
+      alphas.forEach(a => knownAlphaIds.current.add(a.token_id));
+      setScanProgress(Math.max(...alphas.map(a => parseInt(a.token_id)), 0));
+    }
+    setIsLoading(false);
+  };
+
+  const saveAlphaRover = async (rover: NFT): Promise<boolean> => {
+    const { error } = await supabase
+      .from('alpha_rovers')
+      .insert({
+        token_id: rover.identifier,
+        name: rover.name,
+        image_url: rover.image_url,
+        trait_count: rover.traits.length,
+        traits: rover.traits
+      });
+
+    if (error) {
+      if (error.code === '23505') {
+        // Already exists, that's fine
+        return false;
+      }
+      console.error('Error saving alpha rover:', error);
+      return false;
+    }
+    return true;
+  };
 
   const fetchRover = async (tokenId: string): Promise<NFT | null> => {
     try {
@@ -50,59 +110,77 @@ export const AlphaRovers: React.FC = () => {
     setIsPaused(false);
     abortRef.current = false;
 
-    let currentId = scannedIdsRef.current.size > 0 
-      ? Math.max(...scannedIdsRef.current) + 1 
-      : 1;
+    let currentId = scanProgress > 0 ? scanProgress + 1 : 1;
 
     while (currentId <= TOTAL_ROVERS && !abortRef.current) {
-      // Create batch of IDs to fetch
+      // Skip already known alphas
       const batchIds: number[] = [];
       for (let i = 0; i < BATCH_SIZE && currentId + i <= TOTAL_ROVERS; i++) {
-        if (!scannedIdsRef.current.has(currentId + i)) {
-          batchIds.push(currentId + i);
+        const id = currentId + i;
+        if (!knownAlphaIds.current.has(String(id))) {
+          batchIds.push(id);
         }
       }
 
       if (batchIds.length === 0) {
         currentId += BATCH_SIZE;
+        setScanProgress(currentId - 1);
         continue;
       }
 
-      // Fetch batch in parallel
       const results = await Promise.all(
         batchIds.map(id => fetchRover(String(id)))
       );
 
-      // Process results
-      batchIds.forEach((id, index) => {
-        scannedIdsRef.current.add(id);
-        const rover = results[index];
+      for (let i = 0; i < results.length; i++) {
+        const rover = results[i];
         if (rover && rover.traits && rover.traits.length >= ALPHA_THRESHOLD) {
-          setAlphaRovers(prev => {
-            if (prev.find(r => r.identifier === rover.identifier)) return prev;
-            return [...prev, rover];
-          });
+          // Log the discovery
+          console.log(`🌟 ALPHA FOUND: ${rover.name} with ${rover.traits.length} traits!`);
+          
+          // Save to database
+          const saved = await saveAlphaRover(rover);
+          
+          if (saved) {
+            toast({
+              title: "★ ALPHA DISCOVERED ★",
+              description: `${rover.name} has ${rover.traits.length} traits!`
+            });
+
+            // Add to local state
+            const newAlpha: AlphaRover = {
+              id: crypto.randomUUID(),
+              token_id: rover.identifier,
+              name: rover.name,
+              image_url: rover.image_url,
+              trait_count: rover.traits.length,
+              traits: rover.traits,
+              discovered_at: new Date().toISOString()
+            };
+            
+            setAlphaRovers(prev => [...prev, newAlpha].sort((a, b) => b.trait_count - a.trait_count));
+            knownAlphaIds.current.add(rover.identifier);
+          }
         }
-      });
+      }
 
-      setScanProgress(scannedIdsRef.current.size);
       currentId += BATCH_SIZE;
+      setScanProgress(currentId - 1);
 
-      // Small delay between batches to avoid rate limiting
       if (!abortRef.current) {
         await delay(BATCH_DELAY);
       }
     }
 
-    if (scannedIdsRef.current.size >= TOTAL_ROVERS) {
+    if (currentId > TOTAL_ROVERS) {
       toast({
         title: "SCAN COMPLETE",
-        description: `Finished scanning all ${TOTAL_ROVERS} rovers`
+        description: `Finished scanning all ${TOTAL_ROVERS} rovers. Found ${alphaRovers.length} Alphas.`
       });
     }
 
     setIsScanning(false);
-  }, [toast]);
+  }, [scanProgress, toast, alphaRovers.length]);
 
   const pauseScanning = () => {
     abortRef.current = true;
@@ -114,8 +192,6 @@ export const AlphaRovers: React.FC = () => {
     abortRef.current = true;
     setIsScanning(false);
     setIsPaused(false);
-    setAlphaRovers([]);
-    scannedIdsRef.current.clear();
     setScanProgress(0);
   };
 
@@ -190,7 +266,7 @@ export const AlphaRovers: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {alphaRovers.map((rover) => (
               <div 
-                key={rover.identifier}
+                key={rover.token_id}
                 className="border border-primary p-3 bg-primary/5"
               >
                 {/* Rover Image */}
@@ -225,7 +301,7 @@ export const AlphaRovers: React.FC = () => {
                     {rover.name}
                   </div>
                   <div className="text-muted-foreground font-terminal text-xs">
-                    TOKEN #{rover.identifier}
+                    TOKEN #{rover.token_id}
                   </div>
                 </div>
 
@@ -233,7 +309,7 @@ export const AlphaRovers: React.FC = () => {
                 <div className="flex justify-center mb-2">
                   <div className="inline-block bg-primary/20 border border-primary px-2 py-0.5">
                     <span className="text-primary text-glow font-terminal text-xs animate-pulse">
-                      ★ {rover.traits.length} TRAITS ★
+                      ★ {rover.trait_count} TRAITS ★
                     </span>
                   </div>
                 </div>
@@ -241,8 +317,8 @@ export const AlphaRovers: React.FC = () => {
                 {/* Trait Summary */}
                 <div className="text-center">
                   <div className="text-muted-foreground font-terminal text-[10px]">
-                    {rover.traits.slice(0, 5).map(t => t.trait_type).join(' • ')}
-                    {rover.traits.length > 5 && ` +${rover.traits.length - 5} more`}
+                    {rover.traits?.slice(0, 5).map(t => t.trait_type).join(' • ')}
+                    {rover.traits && rover.traits.length > 5 && ` +${rover.traits.length - 5} more`}
                   </div>
                 </div>
               </div>

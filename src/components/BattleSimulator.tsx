@@ -206,7 +206,7 @@ export const BattleSimulator: React.FC = () => {
         {stats && (
           <div className="space-y-1">
             <div className="text-primary font-terminal text-xs mb-2 text-center">
-              ─[ TRAITS ]─
+              ─[ TRAITS ({stats.traits.length}) ]─
             </div>
             {stats.traits.map((trait, idx) => (
               <div
@@ -265,7 +265,7 @@ export const BattleSimulator: React.FC = () => {
                   {/* Trait List */}
                   {rover1.traits && rover1.traits.length > 0 && (
                     <div className="text-left mt-3 space-y-1">
-                      <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ]─</div>
+                      <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover1.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').length}) ]─</div>
                       {rover1.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').map((trait, idx) => (
                         <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
                           <span className="text-muted-foreground truncate">{trait.trait_type}</span>
@@ -319,7 +319,7 @@ export const BattleSimulator: React.FC = () => {
                   {/* Trait List */}
                   {rover2.traits && rover2.traits.length > 0 && (
                     <div className="text-left mt-3 space-y-1">
-                      <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ]─</div>
+                      <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover2.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').length}) ]─</div>
                       {rover2.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').map((trait, idx) => (
                         <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
                           <span className="text-muted-foreground truncate">{trait.trait_type}</span>
@@ -465,7 +465,7 @@ export const BattleSimulator: React.FC = () => {
               <div className="text-muted-foreground font-terminal text-xs mb-3">TOKEN #{rover1.identifier}</div>
               {rover1.traits && rover1.traits.length > 0 && (
                 <div className="text-left mt-3 space-y-1">
-                  <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ]─</div>
+                  <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover1.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').length}) ]─</div>
                   {rover1.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').map((trait, idx) => (
                     <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
                       <span className="text-muted-foreground truncate">{trait.trait_type}</span>
@@ -492,7 +492,7 @@ export const BattleSimulator: React.FC = () => {
               <div className="text-muted-foreground font-terminal text-xs mb-3">TOKEN #{rover2.identifier}</div>
               {rover2.traits && rover2.traits.length > 0 && (
                 <div className="text-left mt-3 space-y-1">
-                  <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ]─</div>
+                  <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover2.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').length}) ]─</div>
                   {rover2.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').map((trait, idx) => (
                     <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
                       <span className="text-muted-foreground truncate">{trait.trait_type}</span>

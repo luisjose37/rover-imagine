@@ -1,12 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { TerminalButton } from './TerminalButton';
-import { TerminalInput } from './TerminalInput';
 import { ASCIILoader } from './ASCIIElements';
-import { cn } from '@/lib/utils';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const ALPHA_THRESHOLD = 13;
+const TOTAL_ROVERS = 5555;
 
 interface NFT {
   identifier: string;
@@ -22,9 +21,10 @@ export const AlphaRovers: React.FC = () => {
   const { toast } = useToast();
   const [alphaRovers, setAlphaRovers] = useState<NFT[]>([]);
   const [isScanning, setIsScanning] = useState(false);
-  const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
-  const [manualTokenId, setManualTokenId] = useState('');
-  const [isCheckingManual, setIsCheckingManual] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const abortRef = useRef(false);
+  const scannedIdsRef = useRef<Set<number>>(new Set());
 
   const fetchRover = async (tokenId: string): Promise<NFT | null> => {
     try {
@@ -41,78 +41,70 @@ export const AlphaRovers: React.FC = () => {
     }
   };
 
-  const checkManualRover = async () => {
-    if (!manualTokenId.trim()) {
-      toast({
-        title: "INPUT REQUIRED",
-        description: "Please enter a token ID",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsCheckingManual(true);
-    const rover = await fetchRover(manualTokenId);
-    setIsCheckingManual(false);
-
-    if (!rover) {
-      toast({
-        title: "SCAN FAILED",
-        description: "Could not locate rover",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const traitCount = rover.traits?.length || 0;
-    if (traitCount >= ALPHA_THRESHOLD) {
-      // Check if already in list
-      if (!alphaRovers.find(r => r.identifier === rover.identifier)) {
-        setAlphaRovers(prev => [...prev, rover]);
-      }
-      toast({
-        title: "★ ALPHA DETECTED ★",
-        description: `${rover.name} has ${traitCount} traits!`
-      });
-    } else {
-      toast({
-        title: "NOT AN ALPHA",
-        description: `${rover.name} has only ${traitCount} traits (need ${ALPHA_THRESHOLD}+)`,
-        variant: "destructive"
-      });
-    }
-    setManualTokenId('');
-  };
-
-  const scanForAlphas = useCallback(async () => {
+  const startScanning = useCallback(async () => {
     setIsScanning(true);
-    setAlphaRovers([]);
-    const foundAlphas: NFT[] = [];
-    const totalToScan = 100; // Scan first 100 random rovers for demo
-    const randomIds = Array.from({ length: totalToScan }, () => Math.floor(Math.random() * 5555) + 1);
+    setIsPaused(false);
+    abortRef.current = false;
 
-    setScanProgress({ current: 0, total: totalToScan });
+    // Continue from where we left off
+    let currentId = scannedIdsRef.current.size > 0 
+      ? Math.max(...scannedIdsRef.current) + 1 
+      : 1;
 
-    for (let i = 0; i < randomIds.length; i++) {
-      const rover = await fetchRover(String(randomIds[i]));
-      setScanProgress({ current: i + 1, total: totalToScan });
+    while (currentId <= TOTAL_ROVERS && !abortRef.current) {
+      if (scannedIdsRef.current.has(currentId)) {
+        currentId++;
+        continue;
+      }
+
+      const rover = await fetchRover(String(currentId));
+      scannedIdsRef.current.add(currentId);
+      setScanProgress(scannedIdsRef.current.size);
 
       if (rover && rover.traits && rover.traits.length >= ALPHA_THRESHOLD) {
-        foundAlphas.push(rover);
-        setAlphaRovers([...foundAlphas]);
+        setAlphaRovers(prev => {
+          if (prev.find(r => r.identifier === rover.identifier)) return prev;
+          return [...prev, rover];
+        });
       }
+
+      currentId++;
+    }
+
+    if (currentId > TOTAL_ROVERS) {
+      toast({
+        title: "SCAN COMPLETE",
+        description: `Finished scanning all ${TOTAL_ROVERS} rovers`
+      });
     }
 
     setIsScanning(false);
-    toast({
-      title: "SCAN COMPLETE",
-      description: `Found ${foundAlphas.length} Alpha Rovers out of ${totalToScan} scanned`
-    });
   }, [toast]);
 
-  const removeRover = (identifier: string) => {
-    setAlphaRovers(prev => prev.filter(r => r.identifier !== identifier));
+  const pauseScanning = () => {
+    abortRef.current = true;
+    setIsPaused(true);
+    setIsScanning(false);
   };
+
+  const resetScan = () => {
+    abortRef.current = true;
+    setIsScanning(false);
+    setIsPaused(false);
+    setAlphaRovers([]);
+    scannedIdsRef.current.clear();
+    setScanProgress(0);
+  };
+
+  // Auto-start scanning on mount
+  useEffect(() => {
+    startScanning();
+    return () => {
+      abortRef.current = true;
+    };
+  }, []);
+
+  const progressPercent = (scanProgress / TOTAL_ROVERS) * 100;
 
   return (
     <div className="space-y-6">
@@ -125,59 +117,43 @@ export const AlphaRovers: React.FC = () => {
         </div>
       </div>
 
-      {/* Manual Check */}
+      {/* Progress Bar */}
       <div className="border border-primary/30 p-4">
-        <div className="text-primary font-terminal text-sm mb-3">CHECK SPECIFIC ROVER</div>
-        <div className="flex gap-2">
-          <TerminalInput
-            label=""
-            value={manualTokenId}
-            onChange={setManualTokenId}
-            placeholder="Enter Token ID..."
-            onSubmit={checkManualRover}
-            disabled={isCheckingManual}
-            className="flex-1"
+        <div className="flex justify-between text-xs font-terminal text-muted-foreground mb-2">
+          <span>SCANNED: {scanProgress} / {TOTAL_ROVERS}</span>
+          <span>ALPHAS FOUND: {alphaRovers.length}</span>
+        </div>
+        <div className="border border-primary/30 h-3 overflow-hidden bg-background">
+          <div 
+            className="h-full bg-primary transition-all duration-300"
+            style={{ width: `${progressPercent}%` }}
           />
-          <TerminalButton
-            onClick={checkManualRover}
-            disabled={isCheckingManual || !manualTokenId.trim()}
-            variant="primary"
-          >
-            {isCheckingManual ? 'CHECKING...' : 'CHECK'}
-          </TerminalButton>
+        </div>
+        <div className="text-center mt-2 text-primary font-terminal text-xs">
+          {progressPercent.toFixed(1)}% COMPLETE
         </div>
       </div>
 
-      {/* Scan Controls */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <TerminalButton
-          onClick={scanForAlphas}
-          disabled={isScanning}
-          variant="primary"
-          size="lg"
-        >
-          {isScanning ? `SCANNING... (${scanProgress.current}/${scanProgress.total})` : '🔍 SCAN FOR ALPHAS'}
-        </TerminalButton>
-        {alphaRovers.length > 0 && !isScanning && (
-          <TerminalButton
-            onClick={() => setAlphaRovers([])}
-            variant="secondary"
-          >
-            CLEAR LIST
+      {/* Controls */}
+      <div className="flex flex-wrap gap-3 justify-center">
+        {isScanning ? (
+          <TerminalButton onClick={pauseScanning} variant="secondary">
+            ⏸ PAUSE SCAN
+          </TerminalButton>
+        ) : (
+          <TerminalButton onClick={startScanning} variant="primary" size="lg">
+            {isPaused ? '▶ RESUME SCAN' : '🔍 START SCAN'}
           </TerminalButton>
         )}
+        <TerminalButton onClick={resetScan} variant="secondary" disabled={isScanning}>
+          ↺ RESET
+        </TerminalButton>
       </div>
 
-      {/* Scanning Progress */}
+      {/* Scanning Indicator */}
       {isScanning && (
-        <div className="py-4">
-          <ASCIILoader text={`SCANNING ROVERS (${scanProgress.current}/${scanProgress.total})`} />
-          <div className="mt-4 border border-primary/30 h-2 overflow-hidden">
-            <div 
-              className="h-full bg-primary transition-all duration-300"
-              style={{ width: `${(scanProgress.current / scanProgress.total) * 100}%` }}
-            />
-          </div>
+        <div className="py-2">
+          <ASCIILoader text={`SCANNING ROVER #${scanProgress + 1}`} />
         </div>
       )}
 
@@ -185,14 +161,14 @@ export const AlphaRovers: React.FC = () => {
       {alphaRovers.length > 0 && (
         <div className="space-y-4">
           <div className="text-primary font-terminal text-sm text-center">
-            ─[ FOUND {alphaRovers.length} ALPHA ROVER{alphaRovers.length !== 1 ? 'S' : ''} ]─
+            ─[ {alphaRovers.length} ALPHA ROVER{alphaRovers.length !== 1 ? 'S' : ''} FOUND ]─
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {alphaRovers.map((rover) => (
               <div 
                 key={rover.identifier}
-                className="border border-primary p-3 bg-primary/5 hover:bg-primary/10 transition-colors"
+                className="border border-primary p-3 bg-primary/5"
               >
                 {/* Rover Image */}
                 <div className="relative aspect-square w-full max-w-[200px] mx-auto border border-primary/50 overflow-hidden mb-3">
@@ -240,21 +216,11 @@ export const AlphaRovers: React.FC = () => {
                 </div>
 
                 {/* Trait Summary */}
-                <div className="text-center mb-2">
+                <div className="text-center">
                   <div className="text-muted-foreground font-terminal text-[10px]">
                     {rover.traits.slice(0, 5).map(t => t.trait_type).join(' • ')}
                     {rover.traits.length > 5 && ` +${rover.traits.length - 5} more`}
                   </div>
-                </div>
-
-                {/* Remove Button */}
-                <div className="text-center">
-                  <button
-                    onClick={() => removeRover(rover.identifier)}
-                    className="text-muted-foreground hover:text-destructive font-terminal text-xs transition-colors"
-                  >
-                    [REMOVE]
-                  </button>
                 </div>
               </div>
             ))}
@@ -263,13 +229,13 @@ export const AlphaRovers: React.FC = () => {
       )}
 
       {/* Empty State */}
-      {alphaRovers.length === 0 && !isScanning && (
+      {alphaRovers.length === 0 && !isScanning && scanProgress === 0 && (
         <div className="text-center py-8 border border-primary/20">
           <div className="text-muted-foreground font-terminal text-sm mb-2">
-            NO ALPHA ROVERS FOUND
+            NO ALPHA ROVERS FOUND YET
           </div>
           <div className="text-muted-foreground/70 font-terminal text-xs">
-            Scan for Alphas or check a specific rover by ID
+            Start scanning to find all Alpha Rovers
           </div>
         </div>
       )}

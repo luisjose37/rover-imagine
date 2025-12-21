@@ -6,6 +6,8 @@ import { ASCIILoader } from './ASCIIElements';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const ALPHA_THRESHOLD = 13;
 const TOTAL_ROVERS = 5555;
+const BATCH_SIZE = 5; // Fetch 5 rovers in parallel
+const BATCH_DELAY = 300; // 300ms delay between batches
 
 interface NFT {
   identifier: string;
@@ -26,35 +28,21 @@ export const AlphaRovers: React.FC = () => {
   const abortRef = useRef(false);
   const scannedIdsRef = useRef<Set<number>>(new Set());
 
-  // Delay helper to avoid rate limiting
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  const fetchRover = async (tokenId: string, retries = 3): Promise<NFT | null> => {
-    for (let attempt = 0; attempt < retries; attempt++) {
-      try {
-        const response = await fetch(`${SUPABASE_URL}/functions/v1/fetch-nfts`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tokenId: tokenId.trim() })
-        });
-        const data = await response.json();
-        
-        // If rate limited, wait and retry
-        if (data.error?.includes('429')) {
-          console.log(`Rate limited on rover ${tokenId}, waiting before retry...`);
-          await delay(2000 * (attempt + 1)); // Exponential backoff
-          continue;
-        }
-        
-        if (data.error) return null;
-        return data;
-      } catch {
-        if (attempt < retries - 1) {
-          await delay(1000 * (attempt + 1));
-        }
-      }
+  const fetchRover = async (tokenId: string): Promise<NFT | null> => {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/fetch-nfts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tokenId: tokenId.trim() })
+      });
+      const data = await response.json();
+      if (data.error) return null;
+      return data;
+    } catch {
+      return null;
     }
-    return null;
   };
 
   const startScanning = useCallback(async () => {
@@ -62,35 +50,51 @@ export const AlphaRovers: React.FC = () => {
     setIsPaused(false);
     abortRef.current = false;
 
-    // Continue from where we left off
     let currentId = scannedIdsRef.current.size > 0 
       ? Math.max(...scannedIdsRef.current) + 1 
       : 1;
 
     while (currentId <= TOTAL_ROVERS && !abortRef.current) {
-      if (scannedIdsRef.current.has(currentId)) {
-        currentId++;
+      // Create batch of IDs to fetch
+      const batchIds: number[] = [];
+      for (let i = 0; i < BATCH_SIZE && currentId + i <= TOTAL_ROVERS; i++) {
+        if (!scannedIdsRef.current.has(currentId + i)) {
+          batchIds.push(currentId + i);
+        }
+      }
+
+      if (batchIds.length === 0) {
+        currentId += BATCH_SIZE;
         continue;
       }
 
-      const rover = await fetchRover(String(currentId));
-      scannedIdsRef.current.add(currentId);
+      // Fetch batch in parallel
+      const results = await Promise.all(
+        batchIds.map(id => fetchRover(String(id)))
+      );
+
+      // Process results
+      batchIds.forEach((id, index) => {
+        scannedIdsRef.current.add(id);
+        const rover = results[index];
+        if (rover && rover.traits && rover.traits.length >= ALPHA_THRESHOLD) {
+          setAlphaRovers(prev => {
+            if (prev.find(r => r.identifier === rover.identifier)) return prev;
+            return [...prev, rover];
+          });
+        }
+      });
+
       setScanProgress(scannedIdsRef.current.size);
+      currentId += BATCH_SIZE;
 
-      if (rover && rover.traits && rover.traits.length >= ALPHA_THRESHOLD) {
-        setAlphaRovers(prev => {
-          if (prev.find(r => r.identifier === rover.identifier)) return prev;
-          return [...prev, rover];
-        });
+      // Small delay between batches to avoid rate limiting
+      if (!abortRef.current) {
+        await delay(BATCH_DELAY);
       }
-
-      currentId++;
-      
-      // Add delay between requests to avoid rate limiting (500ms = ~2 requests/sec)
-      await delay(500);
     }
 
-    if (currentId > TOTAL_ROVERS) {
+    if (scannedIdsRef.current.size >= TOTAL_ROVERS) {
       toast({
         title: "SCAN COMPLETE",
         description: `Finished scanning all ${TOTAL_ROVERS} rovers`

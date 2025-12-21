@@ -57,7 +57,7 @@ serve(async (req) => {
     console.log('Collection data received');
 
     // Get total supply from collection
-    const totalSupply = data.total_supply || 5000; // Default to 5000 if not available
+    const totalSupply = data.total_supply || 5555; // Default to 5555 if not available
 
     // Now fetch traits from the traits endpoint
     const traitsUrl = `https://api.opensea.io/api/v2/traits/${COLLECTION_SLUG}`;

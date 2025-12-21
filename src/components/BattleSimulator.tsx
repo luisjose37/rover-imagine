@@ -234,7 +234,7 @@ export const BattleSimulator: React.FC = () => {
                   <span> = </span>
                   <span className="text-primary">{trait.power}</span>
                   {trait.count !== undefined && trait.count > 0 && (
-                    <span className="ml-2 text-muted-foreground/50">({trait.count}/5000 have this)</span>
+                    <span className="ml-2 text-muted-foreground/50">({trait.count}/5555 have this)</span>
                   )}
                 </div>
               </div>)}

@@ -1,5 +1,8 @@
 project_id = "skolwrdepsajoogspufx"
 
+[functions.fetch-collection-traits]
+verify_jwt = false
+
 [api]
 enabled = true
 port = 54321

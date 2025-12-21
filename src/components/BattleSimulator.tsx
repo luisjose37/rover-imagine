@@ -20,6 +20,7 @@ interface TraitWithRarity {
   value: string;
   rarity: number;
   power: number;
+  count?: number;
 }
 interface RoverStats {
   name: string;
@@ -221,7 +222,9 @@ export const BattleSimulator: React.FC = () => {
                   <div className="text-primary truncate">{trait.value}</div>
                 </div>
                 <div className="text-right ml-2">
-                  <div className="text-muted-foreground">{trait.rarity}%</div>
+                  <div className="text-muted-foreground">
+                    {trait.rarity}% {trait.count !== undefined && <span className="text-primary/50">({trait.count}/5000)</span>}
+                  </div>
                   <div className={cn(trait === stats.dominantTrait ? "text-primary text-glow" : "text-foreground")}>
                     {trait.power} PWR
                   </div>

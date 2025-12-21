@@ -34,7 +34,7 @@ serve(async (req) => {
     console.log('Fetching NFT from OpenSea:', url);
 
     let response: Response;
-    let retries = 3;
+    let retries = 5;
     
     for (let attempt = 0; attempt < retries; attempt++) {
       response = await fetch(url, {
@@ -44,10 +44,11 @@ serve(async (req) => {
         },
       });
       
-      // If rate limited, wait and retry
+      // If rate limited, wait and retry with exponential backoff
       if (response.status === 429) {
-        console.log(`Rate limited, attempt ${attempt + 1}/${retries}, waiting...`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        const waitTime = Math.min(2000 * Math.pow(2, attempt), 30000);
+        console.log(`Rate limited, attempt ${attempt + 1}/${retries}, waiting ${waitTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;
       }
       

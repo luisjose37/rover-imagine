@@ -6,8 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const ALPHA_THRESHOLD = 13;
 const TOTAL_ROVERS = 5555;
-const BATCH_SIZE = 5;
-const BATCH_DELAY = 300;
+const BATCH_SIZE = 2;
+const BATCH_DELAY = 1000;
 interface NFT {
   identifier: string;
   name: string;

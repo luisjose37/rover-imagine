@@ -242,7 +242,7 @@ export const BattleSimulator: React.FC = () => {
       </div>;
   };
 
-  const BattleContent = () => (
+  const battleContent = (
     <>
       {/* Rover Input Section */}
       {!rover1 || !rover2 ? <div className="space-y-6">
@@ -473,7 +473,7 @@ export const BattleSimulator: React.FC = () => {
         </TabsList>
         
         <TabsContent value="battle">
-          <BattleContent />
+          {battleContent}
         </TabsContent>
         
         <TabsContent value="alphas">

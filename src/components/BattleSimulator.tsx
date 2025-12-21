@@ -372,11 +372,8 @@ export const BattleSimulator: React.FC = () => {
           </div>
 
           {/* Actions */}
-          <div className="flex flex-wrap gap-3 justify-center">
-            <TerminalButton onClick={simulateBattle} variant="primary">
-              REMATCH
-            </TerminalButton>
-            <TerminalButton onClick={resetBattle} variant="secondary">
+          <div className="flex justify-center">
+            <TerminalButton onClick={resetBattle} variant="primary">
               NEW BATTLE
             </TerminalButton>
           </div>

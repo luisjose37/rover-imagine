@@ -154,7 +154,7 @@ export const BattleSimulator: React.FC = () => {
         )}
 
         {/* Rover Image */}
-        <div className="relative aspect-square w-full max-w-[200px] sm:max-w-[250px] mx-auto border border-primary/50 overflow-hidden mb-3">
+        <div className="relative aspect-square w-full max-w-[350px] sm:max-w-[437px] mx-auto border border-primary/50 overflow-hidden mb-3">
           {rover.image_url ? (
             rover.image_url.endsWith('.mp4') ? (
               <video
@@ -253,15 +253,27 @@ export const BattleSimulator: React.FC = () => {
               <div className="text-primary font-terminal text-sm mb-3 text-center">ROVER 1</div>
               {rover1 ? (
                 <div className="text-center">
-                  <div className="relative aspect-square w-full max-w-[150px] mx-auto border border-primary overflow-hidden mb-2">
+                  <div className="relative aspect-square w-full max-w-[262px] mx-auto border border-primary overflow-hidden mb-3">
                     {rover1.image_url?.endsWith('.mp4') ? (
                       <video src={rover1.image_url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
                     ) : (
                       <img src={rover1.image_url} alt={rover1.name} className="w-full h-full object-cover" />
                     )}
                   </div>
-                  <div className="text-primary text-glow font-terminal">{rover1.name}</div>
-                  <div className="text-muted-foreground font-terminal text-xs">{rover1.traits?.length || 0} traits</div>
+                  <div className="text-primary text-glow font-terminal text-lg">{rover1.name}</div>
+                  <div className="text-muted-foreground font-terminal text-xs mb-3">TOKEN #{rover1.identifier}</div>
+                  {/* Trait List */}
+                  {rover1.traits && rover1.traits.length > 0 && (
+                    <div className="text-left mt-3 space-y-1">
+                      <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ]─</div>
+                      {rover1.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').map((trait, idx) => (
+                        <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
+                          <span className="text-muted-foreground truncate">{trait.trait_type}</span>
+                          <span className="text-primary truncate ml-2">{trait.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
@@ -295,15 +307,27 @@ export const BattleSimulator: React.FC = () => {
               <div className="text-primary font-terminal text-sm mb-3 text-center">ROVER 2</div>
               {rover2 ? (
                 <div className="text-center">
-                  <div className="relative aspect-square w-full max-w-[150px] mx-auto border border-primary overflow-hidden mb-2">
+                  <div className="relative aspect-square w-full max-w-[262px] mx-auto border border-primary overflow-hidden mb-3">
                     {rover2.image_url?.endsWith('.mp4') ? (
                       <video src={rover2.image_url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
                     ) : (
                       <img src={rover2.image_url} alt={rover2.name} className="w-full h-full object-cover" />
                     )}
                   </div>
-                  <div className="text-primary text-glow font-terminal">{rover2.name}</div>
-                  <div className="text-muted-foreground font-terminal text-xs">{rover2.traits?.length || 0} traits</div>
+                  <div className="text-primary text-glow font-terminal text-lg">{rover2.name}</div>
+                  <div className="text-muted-foreground font-terminal text-xs mb-3">TOKEN #{rover2.identifier}</div>
+                  {/* Trait List */}
+                  {rover2.traits && rover2.traits.length > 0 && (
+                    <div className="text-left mt-3 space-y-1">
+                      <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ]─</div>
+                      {rover2.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').map((trait, idx) => (
+                        <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
+                          <span className="text-muted-foreground truncate">{trait.trait_type}</span>
+                          <span className="text-primary truncate ml-2">{trait.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
@@ -430,15 +454,26 @@ export const BattleSimulator: React.FC = () => {
 
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 border border-primary/30 p-4 text-center">
-              <div className="relative aspect-square w-full max-w-[200px] mx-auto border border-primary overflow-hidden mb-2">
+              <div className="relative aspect-square w-full max-w-[350px] mx-auto border border-primary overflow-hidden mb-3">
                 {rover1.image_url?.endsWith('.mp4') ? (
                   <video src={rover1.image_url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
                 ) : (
                   <img src={rover1.image_url} alt={rover1.name} className="w-full h-full object-cover" />
                 )}
               </div>
-              <div className="text-primary text-glow font-terminal">{rover1.name}</div>
-              <div className="text-muted-foreground font-terminal text-xs">{rover1.traits?.length || 0} traits</div>
+              <div className="text-primary text-glow font-terminal text-lg">{rover1.name}</div>
+              <div className="text-muted-foreground font-terminal text-xs mb-3">TOKEN #{rover1.identifier}</div>
+              {rover1.traits && rover1.traits.length > 0 && (
+                <div className="text-left mt-3 space-y-1">
+                  <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ]─</div>
+                  {rover1.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').map((trait, idx) => (
+                    <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
+                      <span className="text-muted-foreground truncate">{trait.trait_type}</span>
+                      <span className="text-primary truncate ml-2">{trait.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-center px-4">
@@ -446,15 +481,26 @@ export const BattleSimulator: React.FC = () => {
             </div>
 
             <div className="flex-1 border border-primary/30 p-4 text-center">
-              <div className="relative aspect-square w-full max-w-[200px] mx-auto border border-primary overflow-hidden mb-2">
+              <div className="relative aspect-square w-full max-w-[350px] mx-auto border border-primary overflow-hidden mb-3">
                 {rover2.image_url?.endsWith('.mp4') ? (
                   <video src={rover2.image_url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
                 ) : (
                   <img src={rover2.image_url} alt={rover2.name} className="w-full h-full object-cover" />
                 )}
               </div>
-              <div className="text-primary text-glow font-terminal">{rover2.name}</div>
-              <div className="text-muted-foreground font-terminal text-xs">{rover2.traits?.length || 0} traits</div>
+              <div className="text-primary text-glow font-terminal text-lg">{rover2.name}</div>
+              <div className="text-muted-foreground font-terminal text-xs mb-3">TOKEN #{rover2.identifier}</div>
+              {rover2.traits && rover2.traits.length > 0 && (
+                <div className="text-left mt-3 space-y-1">
+                  <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ]─</div>
+                  {rover2.traits.filter(t => t.trait_type.toLowerCase() !== 'honorary' && t.trait_type.toLowerCase() !== 'biome').map((trait, idx) => (
+                    <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
+                      <span className="text-muted-foreground truncate">{trait.trait_type}</span>
+                      <span className="text-primary truncate ml-2">{trait.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

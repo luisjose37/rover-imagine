@@ -47,10 +47,27 @@ interface ASCIILoaderProps {
 }
 
 export const ASCIILoader: React.FC<ASCIILoaderProps> = ({ text = "LOADING" }) => {
+  const [progress, setProgress] = React.useState(0);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 90) return prev;
+        return prev + Math.random() * 15;
+      });
+    }, 200);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="flex flex-col items-center gap-4 py-8">
-      <div className="text-primary text-glow font-terminal text-2xl animate-pulse">
-        ████████████████
+    <div className="flex flex-col items-center gap-4 py-8 w-full max-w-md mx-auto">
+      <div className="w-full">
+        <div className="h-3 w-full bg-secondary/50 rounded-sm overflow-hidden border border-primary/30">
+          <div 
+            className="h-full bg-primary transition-all duration-200 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <span className="text-primary font-terminal text-xl">[</span>
@@ -60,16 +77,6 @@ export const ASCIILoader: React.FC<ASCIILoaderProps> = ({ text = "LOADING" }) =>
         <span className="text-primary font-terminal text-xl loading-dots"></span>
         <span className="text-primary font-terminal text-xl">]</span>
       </div>
-      <pre className="text-primary/60 text-glow font-terminal text-xs">
-{`   ___________
-  /           \\
- /  O     O   \\
-|      ^      |
-|   \\_____/   |
- \\           /
-  \\_________/
-     ROVER`}
-      </pre>
     </div>
   );
 };

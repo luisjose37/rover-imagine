@@ -14,7 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      alpha_rovers: {
+        Row: {
+          discovered_at: string
+          id: string
+          image_url: string | null
+          name: string
+          token_id: string
+          trait_count: number
+          traits: Json
+        }
+        Insert: {
+          discovered_at?: string
+          id?: string
+          image_url?: string | null
+          name: string
+          token_id: string
+          trait_count: number
+          traits?: Json
+        }
+        Update: {
+          discovered_at?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          token_id?: string
+          trait_count?: number
+          traits?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -45,3 +45,6 @@ verify_jwt = false
 
 [functions.simulate-battle]
 verify_jwt = false
+
+[functions.save-alpha-rover]
+verify_jwt = false

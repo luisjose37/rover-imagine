@@ -26,19 +26,35 @@ export const AlphaRovers: React.FC = () => {
   const abortRef = useRef(false);
   const scannedIdsRef = useRef<Set<number>>(new Set());
 
-  const fetchRover = async (tokenId: string): Promise<NFT | null> => {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/fetch-nfts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tokenId: tokenId.trim() })
-      });
-      const data = await response.json();
-      if (data.error) return null;
-      return data;
-    } catch {
-      return null;
+  // Delay helper to avoid rate limiting
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const fetchRover = async (tokenId: string, retries = 3): Promise<NFT | null> => {
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/fetch-nfts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tokenId: tokenId.trim() })
+        });
+        const data = await response.json();
+        
+        // If rate limited, wait and retry
+        if (data.error?.includes('429')) {
+          console.log(`Rate limited on rover ${tokenId}, waiting before retry...`);
+          await delay(2000 * (attempt + 1)); // Exponential backoff
+          continue;
+        }
+        
+        if (data.error) return null;
+        return data;
+      } catch {
+        if (attempt < retries - 1) {
+          await delay(1000 * (attempt + 1));
+        }
+      }
     }
+    return null;
   };
 
   const startScanning = useCallback(async () => {
@@ -69,6 +85,9 @@ export const AlphaRovers: React.FC = () => {
       }
 
       currentId++;
+      
+      // Add delay between requests to avoid rate limiting (500ms = ~2 requests/sec)
+      await delay(500);
     }
 
     if (currentId > TOTAL_ROVERS) {

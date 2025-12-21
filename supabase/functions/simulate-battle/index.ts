@@ -16,7 +16,7 @@ interface RoverData {
   traits: Trait[];
 }
 
-const COLLECTION_SLUG = 'rovers-by-mycobiotics-ltd';
+const COLLECTION_SLUG = 'roversxyz';
 const TOTAL_SUPPLY = 5555; // Actual Rovers collection size
 
 // Trait lookup cache

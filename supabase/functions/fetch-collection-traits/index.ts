@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const CONTRACT_ADDRESS = '0xe0e7f149959c6cac0ddc2cb4ab27942bffda1eb4';
-const COLLECTION_SLUG = 'rovers-by-mycobiotics-ltd';
+const COLLECTION_SLUG = 'roversxyz';
 
 // Cache for trait data (in-memory, resets on cold start)
 let traitCache: Record<string, Record<string, number>> | null = null;

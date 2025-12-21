@@ -138,15 +138,17 @@ export const BattleSimulator: React.FC = () => {
     return Math.floor(Math.random() * 5555) + 1;
   };
 
-  // Calculate power score for a rover (same logic as backend)
+  // Calculate power score for a rover (EXACT same logic as backend)
   const calculatePowerScore = (traits: Array<{ trait_type: string; value: string }>) => {
     let totalPower = 0;
     traits.forEach(trait => {
-      const hash = (trait.trait_type + trait.value).split('').reduce((acc, char) => {
-        return ((acc << 5) - acc) + char.charCodeAt(0);
+      // Must match backend hash exactly - uses trait_type not trait.trait_type in string
+      const hash = (trait.trait_type + trait.value).split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0);
+        return a & a; // Backend uses bitwise AND
       }, 0);
-      const rarity = Math.abs(hash % 30) + 1;
-      const power = Math.round(100 - (rarity * 3.33));
+      const rarity = Math.abs(hash % 29) + 1; // Backend uses % 29, not % 30
+      const power = Math.round((30 - rarity) * 3.33); // Backend formula
       totalPower += power;
     });
     return totalPower;

@@ -16,106 +16,99 @@ interface RoverData {
   traits: Trait[];
 }
 
-// Trait rarity lookup - count of each trait in the collection
-type TraitLookup = Record<string, Record<string, number>>;
+const COLLECTION_SLUG = 'rovers-by-mycobiotics-ltd';
+const TOTAL_SUPPLY = 5555; // Actual Rovers collection size
 
-const TOTAL_SUPPLY = 5000; // Rovers collection size
+// Trait lookup cache
+let traitCache: Record<string, Record<string, number>> | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 3600000; // 1 hour
 
-// Hardcoded trait rarity data based on Rovers collection
-// Values represent approximate count of NFTs with each trait
-const TRAIT_RARITY_DATA: TraitLookup = {
-  "Head": {
-    "Scanner (Orange)": 180, "Scanner (Blue)": 175, "Scanner (Green)": 170, "Scanner (Red)": 165,
-    "Mog": 85, "Dome": 200, "Antenna Array": 150, "Radar Dish": 120, "Solar Panel": 280,
-    "Camera Rig": 220, "Weather Sensor": 190, "Satellite Uplink": 95, "Periscope": 140,
-    "Beacon": 250, "Telescope": 110, "Radio Tower": 130, "Searchlight": 240,
-    "Laser Mount": 75, "Hologram Projector": 45, "Quantum Sensor": 35, "Neural Link": 25,
-    "Crown": 15, "Halo": 20, "Phoenix Crest": 10
-  },
-  "Biome": {
-    "Telemetry": 850, "Desert": 720, "Arctic": 680, "Forest": 750, "Ocean": 520,
-    "Volcanic": 380, "Cave": 450, "Urban": 350, "Swamp": 280, "Mountain": 420,
-    "Space": 150, "Void": 80, "Quantum": 45, "Nebula": 25
-  },
-  "Paint": {
-    "Metallic Orange": 320, "Metallic Blue": 340, "Metallic Green": 310, "Metallic Red": 290,
-    "Rusty Blue": 180, "Woodland Camo": 150, "Desert Camo": 160, "Arctic Camo": 140,
-    "Matte Black": 280, "Matte White": 260, "Chrome": 120, "Gold": 45,
-    "Rainbow": 35, "Holographic": 50, "Obsidian": 65, "Pearl": 80,
-    "Neon Pink": 110, "Neon Green": 105, "Neon Blue": 115, "Carbon Fiber": 95
-  },
-  "Tread": {
-    "Crawler Tracks": 620, "Offworld Wheels": 580, "Militech Tracks": 180, "Hover Pods": 150,
-    "Spider Legs": 220, "Tank Treads": 450, "All-Terrain": 520, "Racing Wheels": 280,
-    "Magnetic Levitation": 95, "Quantum Steps": 40, "Tentacles": 70, "Rocket Boots": 55
-  },
-  "Gadget": {
-    "Spotlights": 680, "Radio Antenna": 720, "TV Antenna": 650, "Dome Cam": 480,
-    "Weather Station": 380, "Forklift": 220, "Laser Pointer (Red)": 150, "Laser Pointer (Green)": 145,
-    "Satellite Dish": 320, "Solar Cells": 550, "Battery Pack": 480, "Tool Arm": 290,
-    "Flamethrower": 85, "Tesla Coil": 75, "Plasma Cannon": 45, "Gravity Well": 25,
-    "Time Distorter": 15, "Reality Bender": 10
-  },
-  "Honorary": {
-    "No": 4850, "Yes": 150
-  },
-  "Left Arm": {
-    "Binoculars": 380, "Chainsaw": 220, "Drill": 280, "Claw": 350, "Pincer": 320,
-    "Octarms (Unpainted)": 180, "Octarms (Painted)": 120, "Hammer": 290, "Wrench": 340,
-    "Plasma Cutter": 95, "Grappling Hook": 150, "Laser Blade": 65, "Force Field": 40,
-    "Telekinetic Grip": 25, "Void Grasp": 12
-  },
-  "Right Arm": {
-    "Flashlight": 420, "Bindle": 180, "Octarms (Unpainted)": 175, "Octarms (Painted)": 115,
-    "Torch": 380, "Scanner": 320, "Probe": 290, "Sensor Array": 250,
-    "Blaster": 140, "Railgun": 85, "Photon Cannon": 55, "Antimatter Beam": 30,
-    "Infinity Gauntlet": 8
-  },
-  "Generation": {
-    "1": 2500, "2": 2000, "3": 400, "0": 100
-  },
-  "Experimental": {
-    "No": 4750, "Yes": 250
+// Fetch real trait data from OpenSea
+const fetchTraitData = async (apiKey: string): Promise<Record<string, Record<string, number>>> => {
+  const now = Date.now();
+  
+  // Return cached data if valid
+  if (traitCache && (now - cacheTimestamp) < CACHE_TTL) {
+    console.log('Using cached trait data');
+    return traitCache;
   }
+
+  const traitsUrl = `https://api.opensea.io/api/v2/traits/${COLLECTION_SLUG}`;
+  console.log('Fetching traits from OpenSea:', traitsUrl);
+  
+  const traitsResponse = await fetch(traitsUrl, {
+    headers: {
+      'X-API-KEY': apiKey,
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!traitsResponse.ok) {
+    const errorText = await traitsResponse.text();
+    console.error('OpenSea traits API error:', traitsResponse.status, errorText);
+    throw new Error(`OpenSea traits API error: ${traitsResponse.status}`);
+  }
+
+  const traitsData = await traitsResponse.json();
+  console.log('Traits data received from OpenSea');
+
+  // Process traits into a lookup table: { traitType: { traitValue: count } }
+  const traitLookup: Record<string, Record<string, number>> = {};
+
+  if (traitsData.categories) {
+    for (const category of traitsData.categories) {
+      const traitType = category.trait_type;
+      traitLookup[traitType] = {};
+      
+      if (category.counts) {
+        for (const trait of category.counts) {
+          traitLookup[traitType][trait.value] = trait.count;
+        }
+      }
+    }
+  }
+
+  // Cache the result
+  traitCache = traitLookup;
+  cacheTimestamp = now;
+
+  console.log('Trait lookup table created with', Object.keys(traitLookup).length, 'trait types');
+  return traitLookup;
 };
 
-// Get trait rarity from lookup or estimate
-const getTraitRarity = (traitType: string, value: string): { rarity: number; count: number } => {
-  const typeData = TRAIT_RARITY_DATA[traitType];
+// Get trait rarity from real OpenSea data
+const getTraitRarity = (
+  traitType: string, 
+  value: string, 
+  traitData: Record<string, Record<string, number>>
+): { rarity: number; count: number } => {
+  const typeData = traitData[traitType];
   if (typeData && typeData[value] !== undefined) {
     const count = typeData[value];
     const rarityPercent = (count / TOTAL_SUPPLY) * 100;
     return { 
-      rarity: Math.round(rarityPercent * 10) / 10,
+      rarity: Math.round(rarityPercent * 100) / 100, // Round to 2 decimal places
       count 
     };
   }
-  // For unknown traits, estimate based on trait type patterns
-  // Rarer trait types get lower default counts
-  const defaultCounts: Record<string, number> = {
-    "Head": 150,
-    "Biome": 400,
-    "Paint": 200,
-    "Tread": 300,
-    "Gadget": 250,
-    "Honorary": 4850,
-    "Left Arm": 250,
-    "Right Arm": 250,
-    "Generation": 1500,
-    "Experimental": 4750
-  };
-  const estimatedCount = defaultCounts[traitType] || 250;
-  const rarityPercent = (estimatedCount / TOTAL_SUPPLY) * 100;
+  
+  // For unknown traits, return a default high count (common trait)
+  console.log(`Unknown trait: ${traitType}/${value}, using default`);
+  const defaultCount = Math.round(TOTAL_SUPPLY * 0.5);
   return { 
-    rarity: Math.round(rarityPercent * 10) / 10,
-    count: estimatedCount 
+    rarity: 50,
+    count: defaultCount 
   };
 };
 
 // Calculate power score from traits (lower rarity = higher power)
-const calculatePowerScore = (traits: Trait[]): { totalPower: number; traitPowers: Array<{ trait: Trait; rarity: number; power: number; count: number }> } => {
+const calculatePowerScore = (
+  traits: Trait[], 
+  traitData: Record<string, Record<string, number>>
+): { totalPower: number; traitPowers: Array<{ trait: Trait; rarity: number; power: number; count: number }> } => {
   const traitPowers = traits.map(trait => {
-    const { rarity, count } = getTraitRarity(trait.trait_type, trait.value);
+    const { rarity, count } = getTraitRarity(trait.trait_type, trait.value, traitData);
     // Lower rarity = higher power (inverse relationship)
     // If only 1% of NFTs have it, power is ~99. If 50% have it, power is ~50.
     const power = Math.round(Math.max(0, 100 - rarity));
@@ -140,15 +133,22 @@ serve(async (req) => {
       throw new Error('AI API key is not configured');
     }
 
+    if (!OPENSEA_API_KEY) {
+      throw new Error('OpenSea API key is not configured');
+    }
+
     const { rover1, rover2 } = await req.json() as { rover1: RoverData; rover2: RoverData };
 
     if (!rover1 || !rover2) {
       throw new Error('Two rovers are required for battle simulation');
     }
 
-    // Calculate power scores for both rovers using hardcoded rarity data
-    const rover1Stats = calculatePowerScore(rover1.traits || []);
-    const rover2Stats = calculatePowerScore(rover2.traits || []);
+    // Fetch real trait data from OpenSea
+    const traitData = await fetchTraitData(OPENSEA_API_KEY);
+
+    // Calculate power scores for both rovers using real rarity data
+    const rover1Stats = calculatePowerScore(rover1.traits || [], traitData);
+    const rover2Stats = calculatePowerScore(rover2.traits || [], traitData);
     console.log('Calculated power scores - Rover1:', rover1Stats.totalPower, 'Rover2:', rover2Stats.totalPower);
 
     // Find dominant trait for each rover
@@ -174,7 +174,8 @@ serve(async (req) => {
           type: tp.trait.trait_type,
           value: tp.trait.value,
           rarity: tp.rarity,
-          power: tp.power
+          power: tp.power,
+          count: tp.count
         })),
         dominantTrait: rover1DominantTrait
       },
@@ -185,7 +186,8 @@ serve(async (req) => {
           type: tp.trait.trait_type,
           value: tp.trait.value,
           rarity: tp.rarity,
-          power: tp.power
+          power: tp.power,
+          count: tp.count
         })),
         dominantTrait: rover2DominantTrait
       },
@@ -212,13 +214,13 @@ WRITING STYLE:
 
 ROVER 1: ${battleContext.rover1.name}
 - Total Power: ${battleContext.rover1.totalPower}
-- Dominant Trait: ${battleContext.rover1.dominantTrait?.trait.trait_type}: ${battleContext.rover1.dominantTrait?.trait.value} (${battleContext.rover1.dominantTrait?.rarity}% rarity, ${battleContext.rover1.dominantTrait?.power} power)
-- Other Traits: ${battleContext.rover1.traits.map(t => `${t.type}: ${t.value}`).join(', ')}
+- Dominant Trait: ${battleContext.rover1.dominantTrait?.trait.trait_type}: ${battleContext.rover1.dominantTrait?.trait.value} (${battleContext.rover1.dominantTrait?.count}/${TOTAL_SUPPLY} have this, ${battleContext.rover1.dominantTrait?.rarity}% rarity, ${battleContext.rover1.dominantTrait?.power} power)
+- Other Traits: ${battleContext.rover1.traits.map(t => `${t.type}: ${t.value} (${t.count}/${TOTAL_SUPPLY})`).join(', ')}
 
 ROVER 2: ${battleContext.rover2.name}
 - Total Power: ${battleContext.rover2.totalPower}
-- Dominant Trait: ${battleContext.rover2.dominantTrait?.trait.trait_type}: ${battleContext.rover2.dominantTrait?.trait.value} (${battleContext.rover2.dominantTrait?.rarity}% rarity, ${battleContext.rover2.dominantTrait?.power} power)
-- Other Traits: ${battleContext.rover2.traits.map(t => `${t.type}: ${t.value}`).join(', ')}
+- Dominant Trait: ${battleContext.rover2.dominantTrait?.trait.trait_type}: ${battleContext.rover2.dominantTrait?.trait.value} (${battleContext.rover2.dominantTrait?.count}/${TOTAL_SUPPLY} have this, ${battleContext.rover2.dominantTrait?.rarity}% rarity, ${battleContext.rover2.dominantTrait?.power} power)
+- Other Traits: ${battleContext.rover2.traits.map(t => `${t.type}: ${t.value} (${t.count}/${TOTAL_SUPPLY})`).join(', ')}
 
 WINNER: ${battleContext.winner}
 DOMINANT TRAIT IN VICTORY: ${battleContext.winnerDominantTrait?.trait_type}: ${battleContext.winnerDominantTrait?.value}
@@ -260,13 +262,15 @@ Generate the battle log now. Include dramatic moments where traits clash. The do
           value: tp.trait.value,
           rarity: tp.rarity,
           power: tp.power,
-          count: tp.count
+          count: tp.count,
+          totalSupply: TOTAL_SUPPLY
         })),
         dominantTrait: rover1DominantTrait ? {
           trait_type: rover1DominantTrait.trait.trait_type,
           value: rover1DominantTrait.trait.value,
           rarity: rover1DominantTrait.rarity,
-          power: rover1DominantTrait.power
+          power: rover1DominantTrait.power,
+          count: rover1DominantTrait.count
         } : null
       },
       rover2Stats: {
@@ -278,17 +282,20 @@ Generate the battle log now. Include dramatic moments where traits clash. The do
           value: tp.trait.value,
           rarity: tp.rarity,
           power: tp.power,
-          count: tp.count
+          count: tp.count,
+          totalSupply: TOTAL_SUPPLY
         })),
         dominantTrait: rover2DominantTrait ? {
           trait_type: rover2DominantTrait.trait.trait_type,
           value: rover2DominantTrait.trait.value,
           rarity: rover2DominantTrait.rarity,
-          power: rover2DominantTrait.power
+          power: rover2DominantTrait.power,
+          count: rover2DominantTrait.count
         } : null
       },
       winner: winner.name,
-      winnerId: winner.identifier
+      winnerId: winner.identifier,
+      totalSupply: TOTAL_SUPPLY
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -65,24 +65,33 @@ export const AlphaRovers: React.FC = () => {
     setIsLoading(false);
   };
   const saveAlphaRover = async (rover: NFT): Promise<boolean> => {
-    const {
-      error
-    } = await supabase.from('alpha_rovers').insert({
-      token_id: rover.identifier,
-      name: rover.name,
-      image_url: rover.image_url,
-      trait_count: rover.traits.length,
-      traits: rover.traits
-    });
-    if (error) {
-      if (error.code === '23505') {
-        // Already exists, that's fine
+    try {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/save-alpha-rover`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          token_id: rover.identifier,
+          name: rover.name,
+          image_url: rover.image_url,
+          trait_count: rover.traits.length,
+          traits: rover.traits
+        })
+      });
+      const data = await response.json();
+      if (data.error) {
+        console.error('Error saving alpha rover:', data.error);
         return false;
       }
+      if (data.exists) {
+        return false;
+      }
+      return data.success;
+    } catch (error) {
       console.error('Error saving alpha rover:', error);
       return false;
     }
-    return true;
   };
   const fetchRover = async (tokenId: string): Promise<NFT | null> => {
     try {

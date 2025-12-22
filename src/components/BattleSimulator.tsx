@@ -4,7 +4,6 @@ import { TerminalButton } from './TerminalButton';
 import { TerminalInput } from './TerminalInput';
 import { ASCIILoader, ASCIIDivider } from './ASCIIElements';
 import { AlphaRovers } from './AlphaRovers';
-import { TurnBasedBattle } from './TurnBasedBattle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
@@ -45,16 +44,6 @@ interface BattleResult {
   winnerId: string;
 }
 
-type BattleMode = 'selection' | 'interactive' | 'ai-narrated' | 'result';
-
-interface BattleLogEntry {
-  round: number;
-  turn: 'player' | 'enemy';
-  action: string;
-  damage?: number;
-  healing?: number;
-  description: string;
-}
 
 export const BattleSimulator: React.FC = () => {
   const { toast } = useToast();
@@ -66,13 +55,6 @@ export const BattleSimulator: React.FC = () => {
   const [isLoadingRover2, setIsLoadingRover2] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
   const [battleResult, setBattleResult] = useState<BattleResult | null>(null);
-  const [battleMode, setBattleMode] = useState<BattleMode>('selection');
-  const [interactiveBattleResult, setInteractiveBattleResult] = useState<{
-    winner: 'player' | 'enemy' | 'draw';
-    log: BattleLogEntry[];
-  } | null>(null);
-  const [rover1Power, setRover1Power] = useState(0);
-  const [rover2Power, setRover2Power] = useState(0);
   const fetchRover = async (tokenId: string, setRover: (nft: NFT | null) => void, setLoading: (loading: boolean) => void) => {
     if (!tokenId.trim()) {
       toast({
@@ -158,63 +140,6 @@ export const BattleSimulator: React.FC = () => {
     setRover1(null);
     setRover2(null);
     setBattleResult(null);
-    setBattleMode('selection');
-    setInteractiveBattleResult(null);
-    setRover1Power(0);
-    setRover2Power(0);
-  };
-
-  // Calculate power for interactive battle with diminishing returns
-  const calculateTotalPower = (traits: Array<{ trait_type: string; value: string }>): number => {
-    let rawPower = 0;
-    traits.forEach(trait => {
-      const hash = (trait.trait_type + trait.value).split('').reduce((a, b) => {
-        a = ((a << 5) - a) + b.charCodeAt(0);
-        return a & a;
-      }, 0);
-      const rarity = Math.abs(hash % 29) + 1;
-      const power = Math.round((30 - rarity) * 3.33);
-      rawPower += power;
-    });
-    
-    // Apply diminishing returns based on trait count
-    // More traits = less power per trait (logarithmic scaling)
-    const traitCount = traits.length;
-    const diminishingFactor = Math.log2(traitCount + 1) / Math.log2(14); // 13 traits = factor of ~1
-    const adjustedPower = rawPower * (0.5 + (0.5 * diminishingFactor));
-    
-    // Cap the power to prevent extreme differences
-    return Math.min(Math.round(adjustedPower), 400);
-  };
-
-  const startInteractiveBattle = () => {
-    if (!rover1 || !rover2) return;
-    const power1 = calculateTotalPower(rover1.traits || []);
-    const power2 = calculateTotalPower(rover2.traits || []);
-    setRover1Power(power1);
-    setRover2Power(power2);
-    setBattleMode('interactive');
-  };
-
-  const handleInteractiveBattleEnd = (
-    winner: 'player' | 'enemy' | 'draw',
-    log: BattleLogEntry[]
-  ) => {
-    setInteractiveBattleResult({ winner, log });
-    setBattleMode('result');
-    
-    const winnerName = winner === 'player' 
-      ? rover1?.name 
-      : winner === 'enemy' 
-        ? rover2?.name 
-        : 'Nobody';
-    
-    toast({
-      title: winner === 'draw' ? "BATTLE DRAW" : "BATTLE COMPLETE",
-      description: winner === 'draw' 
-        ? "Both rovers fought to a standstill!" 
-        : `${winnerName} wins!`
-    });
   };
 
   const generateRandomTokenId = () => {
@@ -471,185 +396,6 @@ export const BattleSimulator: React.FC = () => {
             </TerminalButton>
           </div>
         </div>}
-
-      {/* Both Rovers Selected but no battle yet - Mode Selection */}
-      {rover1 && rover2 && battleMode === 'selection' && !battleResult && !isSimulating && (
-        <div className="space-y-6">
-          <div className="text-primary font-terminal text-base md:text-lg text-glow text-center">
-            {">"} ROVERS READY FOR BATTLE
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-4 items-start">
-            <div className="flex-1 border border-primary/30 p-4 text-center">
-              <div className="relative aspect-square w-full max-w-[350px] mx-auto border border-primary overflow-hidden mb-3">
-                {rover1.image_url?.endsWith('.mp4') ? <video src={rover1.image_url} autoPlay loop muted playsInline className="w-full h-full object-cover" /> : <img src={rover1.image_url} alt={rover1.name} className="w-full h-full object-cover" />}
-              </div>
-              <div className="text-primary text-glow font-terminal text-lg">{rover1.name}</div>
-              {isTopTierPower(rover1.traits) && (
-                <div className="inline-block bg-primary/20 border border-primary px-2 py-0.5 mt-1">
-                  <span className="text-primary text-glow font-terminal text-xs animate-pulse">★ TOP 5% POWER ★</span>
-                </div>
-              )}
-              {rover1.traits && rover1.traits.length > 0 && <div className="text-left mt-3 space-y-1">
-                  <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover1.traits.length}) ]─</div>
-                  {rover1.traits.map((trait, idx) => <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
-                      <span className="text-muted-foreground truncate">{trait.trait_type}</span>
-                      <span className="text-primary truncate ml-2">{trait.value}</span>
-                    </div>)}
-                </div>}
-            </div>
-
-            <div className="flex items-center justify-center px-4">
-              <span className="text-primary text-glow font-terminal text-2xl">VS</span>
-            </div>
-
-            <div className="flex-1 border border-primary/30 p-4 text-center">
-              <div className="relative aspect-square w-full max-w-[350px] mx-auto border border-primary overflow-hidden mb-3">
-                {rover2.image_url?.endsWith('.mp4') ? <video src={rover2.image_url} autoPlay loop muted playsInline className="w-full h-full object-cover" /> : <img src={rover2.image_url} alt={rover2.name} className="w-full h-full object-cover" />}
-              </div>
-              <div className="text-primary text-glow font-terminal text-lg">{rover2.name}</div>
-              {isTopTierPower(rover2.traits) && (
-                <div className="inline-block bg-primary/20 border border-primary px-2 py-0.5 mt-1">
-                  <span className="text-primary text-glow font-terminal text-xs animate-pulse">★ TOP 5% POWER ★</span>
-                </div>
-              )}
-              {rover2.traits && rover2.traits.length > 0 && <div className="text-left mt-3 space-y-1">
-                  <div className="text-primary font-terminal text-xs mb-2 text-center">─[ TRAITS ({rover2.traits.length}) ]─</div>
-                  {rover2.traits.map((trait, idx) => <div key={idx} className="flex justify-between text-xs font-terminal border border-primary/20 p-1">
-                      <span className="text-muted-foreground truncate">{trait.trait_type}</span>
-                      <span className="text-primary truncate ml-2">{trait.value}</span>
-                    </div>)}
-                </div>}
-            </div>
-          </div>
-
-          {/* Battle Mode Selection */}
-          <div className="border border-primary/30 p-4 bg-primary/5">
-            <div className="text-primary font-terminal text-sm mb-4 text-center">
-              {">"} CHOOSE BATTLE MODE
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <TerminalButton 
-                onClick={startInteractiveBattle} 
-                variant="primary" 
-                size="lg"
-                className="w-full"
-              >
-                <div className="flex flex-col items-center py-2">
-                  <span className="text-lg">🎮 INTERACTIVE BATTLE</span>
-                  <span className="text-xs text-muted-foreground mt-1">
-                    3-round strategic combat with player choices
-                  </span>
-                </div>
-              </TerminalButton>
-              <TerminalButton 
-                onClick={simulateBattle} 
-                disabled={isSimulating}
-                variant="secondary" 
-                size="lg"
-                className="w-full"
-              >
-                <div className="flex flex-col items-center py-2">
-                  <span className="text-lg">🤖 AI NARRATED BATTLE</span>
-                  <span className="text-xs text-muted-foreground mt-1">
-                    AI generates dramatic battle narrative
-                  </span>
-                </div>
-              </TerminalButton>
-            </div>
-          </div>
-
-          <div className="flex justify-center">
-            <TerminalButton onClick={resetBattle} variant="secondary">
-              RESET
-            </TerminalButton>
-          </div>
-        </div>
-      )}
-
-      {/* Interactive Battle Mode */}
-      {rover1 && rover2 && battleMode === 'interactive' && (
-        <TurnBasedBattle
-          playerRover={rover1}
-          enemyRover={rover2}
-          playerTotalPower={rover1Power}
-          enemyTotalPower={rover2Power}
-          onBattleEnd={handleInteractiveBattleEnd}
-          onReset={resetBattle}
-        />
-      )}
-
-      {/* Interactive Battle Results */}
-      {interactiveBattleResult && battleMode === 'result' && rover1 && rover2 && (
-        <div className="space-y-6">
-          <div className="text-primary font-terminal text-base md:text-lg text-glow text-center">
-            {">"} BATTLE COMPLETE
-          </div>
-
-          {/* Winner Announcement */}
-          <div className="text-center border border-primary p-6 bg-primary/10">
-            <div className="text-muted-foreground font-terminal text-xs mb-2">
-              {interactiveBattleResult.winner === 'draw' ? 'RESULT' : 'VICTOR'}
-            </div>
-            <div className="text-primary text-glow font-terminal text-2xl sm:text-3xl animate-pulse mb-2">
-              {interactiveBattleResult.winner === 'player' && rover1.name}
-              {interactiveBattleResult.winner === 'enemy' && rover2.name}
-              {interactiveBattleResult.winner === 'draw' && 'DRAW'}
-            </div>
-            <div className="text-muted-foreground font-terminal text-sm">
-              {interactiveBattleResult.winner === 'draw' 
-                ? 'Both rovers fought to a standstill after 3 rounds!'
-                : `Emerged victorious after ${interactiveBattleResult.log[interactiveBattleResult.log.length - 1]?.round || 3} rounds of combat!`
-              }
-            </div>
-          </div>
-
-          <ASCIIDivider />
-
-          {/* Battle Log */}
-          <div className="border border-primary/50 p-4 bg-primary/5 max-h-[400px] overflow-y-auto">
-            <div className="text-primary font-terminal text-sm mb-3 text-glow">
-              {">"} COMPLETE BATTLE LOG
-            </div>
-            <div className="space-y-2">
-              {interactiveBattleResult.log.map((entry, idx) => (
-                <div 
-                  key={idx} 
-                  className={cn(
-                    "font-terminal text-xs p-2 border-l-2",
-                    entry.turn === 'player' 
-                      ? "border-l-primary bg-primary/5" 
-                      : "border-l-destructive bg-destructive/5"
-                  )}
-                >
-                  <div className="flex justify-between items-start gap-2">
-                    <span className={cn(
-                      "font-bold",
-                      entry.turn === 'player' ? "text-primary" : "text-destructive"
-                    )}>
-                      [ROUND {entry.round}] {entry.action}
-                    </span>
-                    {entry.damage && (
-                      <span className="text-destructive">-{entry.damage} HP</span>
-                    )}
-                    {entry.healing && (
-                      <span className="text-green-500">+{entry.healing} HP</span>
-                    )}
-                  </div>
-                  <div className="text-foreground/80 mt-1">{entry.description}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-center gap-4">
-            <TerminalButton onClick={resetBattle} variant="primary">
-              NEW BATTLE
-            </TerminalButton>
-          </div>
-        </div>
-      )}
     </>
   );
 

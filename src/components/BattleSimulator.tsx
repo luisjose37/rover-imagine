@@ -6,6 +6,7 @@ import { ASCIILoader, ASCIIDivider } from './ASCIIElements';
 import { AlphaRovers } from './AlphaRovers';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { shareBattleResult } from '@/lib/shareUtils';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const TOTAL_SUPPLY = 5555;
@@ -397,9 +398,25 @@ export const BattleSimulator: React.FC = () => {
           </div>
 
           {/* Actions */}
-          <div className="flex justify-center">
+          <div className="flex justify-center gap-3">
             <TerminalButton onClick={resetBattle} variant="primary">
               NEW BATTLE
+            </TerminalButton>
+            <TerminalButton 
+              onClick={() => {
+                const winner = battleResult.winner;
+                const loser = battleResult.winnerId === rover1?.identifier ? rover2?.name : rover1?.name;
+                const winnerPower = battleResult.winnerId === rover1?.identifier 
+                  ? battleResult.rover1Stats.totalPower 
+                  : battleResult.rover2Stats.totalPower;
+                const loserPower = battleResult.winnerId === rover1?.identifier 
+                  ? battleResult.rover2Stats.totalPower 
+                  : battleResult.rover1Stats.totalPower;
+                shareBattleResult(winner, loser || 'Unknown', winnerPower, loserPower);
+              }} 
+              variant="secondary"
+            >
+              𝕏 SHARE
             </TerminalButton>
           </div>
         </div>}

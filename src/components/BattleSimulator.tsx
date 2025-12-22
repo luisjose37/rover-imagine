@@ -387,15 +387,37 @@ export const BattleSimulator: React.FC = () => {
           </div>
 
           {/* Winner Announcement */}
-          <div className="text-center border border-primary p-4 bg-primary/10">
-            <div className="text-muted-foreground font-terminal text-xs mb-1">VICTOR</div>
-            <div className="text-primary text-glow font-terminal text-xl sm:text-2xl animate-pulse">
-              {battleResult.winner}
-            </div>
-            <div className="text-muted-foreground font-terminal text-xs mt-2">
-              Dominant Trait: {battleResult.winnerId === rover1?.identifier ? `${battleResult.rover1Stats.dominantTrait?.trait_type}: ${battleResult.rover1Stats.dominantTrait?.value}` : `${battleResult.rover2Stats.dominantTrait?.trait_type}: ${battleResult.rover2Stats.dominantTrait?.value}`}
-            </div>
-          </div>
+          {(() => {
+            const winnerPower = battleResult.winnerId === rover1?.identifier 
+              ? battleResult.rover1Stats.totalPower 
+              : battleResult.rover2Stats.totalPower;
+            const loserPower = battleResult.winnerId === rover1?.identifier 
+              ? battleResult.rover2Stats.totalPower 
+              : battleResult.rover1Stats.totalPower;
+            const isUnderdogVictory = winnerPower < loserPower;
+            
+            return (
+              <div className="text-center border border-primary p-4 bg-primary/10">
+                {isUnderdogVictory && (
+                  <div className="inline-block bg-yellow-500/20 border border-yellow-500 px-3 py-1 mb-3 animate-pulse">
+                    <span className="text-yellow-400 font-terminal text-xs">⚡ UNDERDOG VICTORY ⚡</span>
+                  </div>
+                )}
+                <div className="text-muted-foreground font-terminal text-xs mb-1">VICTOR</div>
+                <div className="text-primary text-glow font-terminal text-xl sm:text-2xl animate-pulse">
+                  {battleResult.winner}
+                </div>
+                {isUnderdogVictory && (
+                  <div className="text-yellow-400 font-terminal text-xs mt-2">
+                    Won with {winnerPower} PWR vs {loserPower} PWR!
+                  </div>
+                )}
+                <div className="text-muted-foreground font-terminal text-xs mt-2">
+                  Dominant Trait: {battleResult.winnerId === rover1?.identifier ? `${battleResult.rover1Stats.dominantTrait?.trait_type}: ${battleResult.rover1Stats.dominantTrait?.value}` : `${battleResult.rover2Stats.dominantTrait?.trait_type}: ${battleResult.rover2Stats.dominantTrait?.value}`}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Actions */}
           <div className="flex justify-center gap-3">

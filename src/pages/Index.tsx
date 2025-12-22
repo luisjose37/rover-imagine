@@ -10,6 +10,7 @@ import { WordCountSelector, WordCountOption } from '@/components/WordCountSelect
 import { BackgroundMusic } from '@/components/BackgroundMusic';
 import { BattleSimulator } from '@/components/BattleSimulator';
 import { cn } from '@/lib/utils';
+import { shareMission, shareStory } from '@/lib/shareUtils';
 
 type AppMode = 'story' | 'battle';
 
@@ -222,13 +223,25 @@ const Index = () => {
                     </TerminalButton>
                     <TerminalButton onClick={resetSearch} variant="secondary" disabled={isGeneratingStory || isGeneratingMission}>NEW SEARCH</TerminalButton>
                   </div>
-                  {mission && <div className="mt-4 p-4 border border-primary/50 bg-primary/5"><div className="text-primary font-terminal text-sm mb-2 text-glow">{">"} MISSION LOG:</div><p className="text-foreground font-terminal text-sm leading-relaxed">{mission}</p></div>}
+                  {mission && <div className="mt-4 p-4 border border-primary/50 bg-primary/5">
+                    <div className="text-primary font-terminal text-sm mb-2 text-glow">{">"} MISSION LOG:</div>
+                    <p className="text-foreground font-terminal text-sm leading-relaxed">{mission}</p>
+                    <div className="mt-3">
+                      <TerminalButton onClick={() => shareMission(selectedNFT?.name || 'Unknown Rover', mission)} variant="secondary" className="text-xs">
+                        𝕏 SHARE MISSION
+                      </TerminalButton>
+                    </div>
+                  </div>}
                   {!selectedNFT.traits?.length && <div className="mt-4 text-destructive font-terminal text-sm border border-destructive/50 p-3">⚠ NO TRAIT DATA AVAILABLE FOR THIS ROVER</div>}
                 </div>
                 <div className="border-t border-primary/30 p-4 md:p-6">
                   <div className="text-primary font-terminal text-base md:text-lg mb-4 text-glow">{">"} STORY TRANSMISSION [{wordCount} WORDS]</div>
                   <StoryDisplay story={story} isGenerating={isGeneratingStory} roverName={selectedNFT?.name} />
-                  {story && !isGeneratingStory && <div className="mt-6 flex flex-wrap gap-3"><TerminalButton onClick={copyToClipboard} variant="secondary">COPY</TerminalButton><TerminalButton onClick={exportStory} variant="secondary">EXPORT .TXT</TerminalButton></div>}
+                  {story && !isGeneratingStory && <div className="mt-6 flex flex-wrap gap-3">
+                    <TerminalButton onClick={copyToClipboard} variant="secondary">COPY</TerminalButton>
+                    <TerminalButton onClick={exportStory} variant="secondary">EXPORT .TXT</TerminalButton>
+                    <TerminalButton onClick={() => shareStory(selectedNFT?.name || 'Unknown Rover', story)} variant="secondary">𝕏 SHARE</TerminalButton>
+                  </div>}
                 </div>
               </div>
             )}

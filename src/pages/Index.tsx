@@ -10,7 +10,7 @@ import { WordCountSelector, WordCountOption } from '@/components/WordCountSelect
 import { BackgroundMusic } from '@/components/BackgroundMusic';
 import { BattleSimulator } from '@/components/BattleSimulator';
 import { cn } from '@/lib/utils';
-import { shareMission, shareStory } from '@/lib/shareUtils';
+import { shareMission } from '@/lib/shareUtils';
 
 type AppMode = 'story' | 'battle';
 
@@ -240,7 +240,6 @@ const Index = () => {
                   {story && !isGeneratingStory && <div className="mt-6 flex flex-wrap gap-3">
                     <TerminalButton onClick={copyToClipboard} variant="secondary">COPY</TerminalButton>
                     <TerminalButton onClick={exportStory} variant="secondary">EXPORT .TXT</TerminalButton>
-                    <TerminalButton onClick={() => shareStory(selectedNFT?.name || 'Unknown Rover', story)} variant="secondary">𝕏 SHARE</TerminalButton>
                   </div>}
                 </div>
               </div>

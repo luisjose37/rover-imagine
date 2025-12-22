@@ -249,10 +249,11 @@ export const BattleSimulator: React.FC = () => {
 
   const battleContent = (
     <>
-      {/* Rover Input Section */}
-      {!rover1 || !rover2 ? <div className="space-y-6">
+      {/* Rover Input/Display Section - always show unless we have results */}
+      {!battleResult && !isSimulating && (
+        <div className="space-y-6">
           <div className="text-primary font-terminal text-base md:text-lg text-glow text-center">
-            {">"} SELECT TWO ROVERS FOR BATTLE
+            {">"} {rover1 && rover2 ? 'ROVERS READY FOR BATTLE' : 'SELECT TWO ROVERS FOR BATTLE'}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-start">
@@ -336,12 +337,18 @@ export const BattleSimulator: React.FC = () => {
           <div className="md:hidden text-center text-primary text-glow font-terminal text-xl">VS</div>
 
           {/* Battle Button */}
-          {rover1 && rover2 && <div className="text-center">
+          {rover1 && rover2 && (
+            <div className="flex justify-center gap-4">
               <TerminalButton onClick={simulateBattle} disabled={isSimulating} variant="primary" size="lg">
                 {isSimulating ? 'SIMULATING...' : '⚔ START BATTLE ⚔'}
               </TerminalButton>
-            </div>}
-        </div> : null}
+              <TerminalButton onClick={resetBattle} variant="secondary">
+                RESET
+              </TerminalButton>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Loading State */}
       {isSimulating && <div className="py-8">

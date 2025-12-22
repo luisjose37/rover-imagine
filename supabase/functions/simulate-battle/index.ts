@@ -206,6 +206,11 @@ serve(async (req) => {
     const winnerStats = power1 > power2 ? rover1Stats : rover2Stats;
     const loserStats = power1 > power2 ? rover2Stats : rover1Stats;
     const winnerDominantTrait = power1 > power2 ? rover1DominantTrait : rover2DominantTrait;
+    const loserDominantTrait = power1 > power2 ? rover2DominantTrait : rover1DominantTrait;
+    
+    // Detect underdog victory
+    const isUnderdogVictory = winnerStats.totalPower < loserStats.totalPower;
+    const powerGap = Math.abs(winnerStats.totalPower - loserStats.totalPower);
 
     // Prepare battle context for AI
     const battleContext = {
@@ -235,10 +240,24 @@ serve(async (req) => {
       },
       winner: winner.name,
       loser: loser.name,
-      winnerDominantTrait: winnerDominantTrait?.trait
+      winnerDominantTrait: winnerDominantTrait?.trait,
+      isUnderdogVictory,
+      powerGap
     };
 
     console.log('Battle context:', JSON.stringify(battleContext, null, 2));
+
+    const underdogInstructions = isUnderdogVictory 
+      ? `
+IMPORTANT - UNDERDOG VICTORY:
+${winner.name} (${winnerStats.totalPower} PWR) defeated the more powerful ${loser.name} (${loserStats.totalPower} PWR)!
+This is an UPSET! You MUST explain HOW the weaker rover won. Consider:
+- A critical moment where the underdog's unique trait gave them an unexpected advantage
+- The stronger rover making a tactical error or being overconfident
+- The underdog exploiting a weakness in the opponent's loadout
+- A clutch move or lucky break that turned the tide
+Make the narrative compelling and explain the upset clearly!`
+      : '';
 
     const systemPrompt = `You are a battle commentator for the Rovers universe. Generate a short, exciting battle log.
 
@@ -266,6 +285,7 @@ ROVER 2: ${battleContext.rover2.name}
 
 WINNER: ${battleContext.winner}
 DOMINANT TRAIT IN VICTORY: ${battleContext.winnerDominantTrait?.trait_type}: ${battleContext.winnerDominantTrait?.value}
+${underdogInstructions}
 
 Generate the battle log now. Include dramatic moments where traits clash. The dominant trait should play a key role in the victory.`;
 

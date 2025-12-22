@@ -164,9 +164,9 @@ export const BattleSimulator: React.FC = () => {
     setRover2Power(0);
   };
 
-  // Calculate power for interactive battle
+  // Calculate power for interactive battle with diminishing returns
   const calculateTotalPower = (traits: Array<{ trait_type: string; value: string }>): number => {
-    let totalPower = 0;
+    let rawPower = 0;
     traits.forEach(trait => {
       const hash = (trait.trait_type + trait.value).split('').reduce((a, b) => {
         a = ((a << 5) - a) + b.charCodeAt(0);
@@ -174,9 +174,17 @@ export const BattleSimulator: React.FC = () => {
       }, 0);
       const rarity = Math.abs(hash % 29) + 1;
       const power = Math.round((30 - rarity) * 3.33);
-      totalPower += power;
+      rawPower += power;
     });
-    return totalPower;
+    
+    // Apply diminishing returns based on trait count
+    // More traits = less power per trait (logarithmic scaling)
+    const traitCount = traits.length;
+    const diminishingFactor = Math.log2(traitCount + 1) / Math.log2(14); // 13 traits = factor of ~1
+    const adjustedPower = rawPower * (0.5 + (0.5 * diminishingFactor));
+    
+    // Cap the power to prevent extreme differences
+    return Math.min(Math.round(adjustedPower), 400);
   };
 
   const startInteractiveBattle = () => {

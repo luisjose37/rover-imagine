@@ -54,6 +54,7 @@ const BASE_HEALTH = 100;
 const BASE_ATTACK = 15;
 const BASE_DEFENSE = 5;
 const MAX_ROUNDS = 3;
+const UNDERDOG_LUCK_BONUS = 0.15; // 15% crit chance bonus for underdogs
 
 const TRAIT_ABILITIES: { name: TraitAbility; label: string; description: string }[] = [
   { name: 'critical_strike', label: 'CRITICAL STRIKE', description: '+50% damage' },
@@ -121,11 +122,22 @@ export const TurnBasedBattle: React.FC<TurnBasedBattleProps> = ({
   onBattleEnd,
   onReset,
 }) => {
-  // Initialize combat stats from Total Power
-  const initializeStats = useCallback((rover: NFT, totalPower: number): RoverCombatStats => {
-    const maxHealth = BASE_HEALTH + Math.round(totalPower / 5);
-    const baseAttack = BASE_ATTACK + Math.round(totalPower / 10);
-    const baseDefense = BASE_DEFENSE + Math.round(totalPower / 20);
+  // Calculate underdog bonus (the rover with less power gets benefits)
+  const powerDifference = Math.abs(playerTotalPower - enemyTotalPower);
+  const playerIsUnderdog = playerTotalPower < enemyTotalPower;
+  const enemyIsUnderdog = enemyTotalPower < playerTotalPower;
+  
+  // Underdog gets bonus luck (higher crit chance) based on power gap
+  const underdogLuckBonus = Math.min(powerDifference / 200, UNDERDOG_LUCK_BONUS);
+  const playerLuckBonus = playerIsUnderdog ? underdogLuckBonus : 0;
+  const enemyLuckBonus = enemyIsUnderdog ? underdogLuckBonus : 0;
+
+  // Initialize combat stats with reduced power scaling
+  const initializeStats = useCallback((rover: NFT, totalPower: number, opponentPower: number): RoverCombatStats => {
+    // Reduced stat scaling - power matters less
+    const maxHealth = BASE_HEALTH + Math.round(totalPower / 8); // Was /5
+    const baseAttack = BASE_ATTACK + Math.round(totalPower / 15); // Was /10
+    const baseDefense = BASE_DEFENSE + Math.round(totalPower / 25); // Was /20
     
     return {
       name: rover.name,
@@ -145,10 +157,10 @@ export const TurnBasedBattle: React.FC<TurnBasedBattleProps> = ({
   }, []);
 
   const [playerStats, setPlayerStats] = useState<RoverCombatStats>(() => 
-    initializeStats(playerRover, playerTotalPower)
+    initializeStats(playerRover, playerTotalPower, enemyTotalPower)
   );
   const [enemyStats, setEnemyStats] = useState<RoverCombatStats>(() => 
-    initializeStats(enemyRover, enemyTotalPower)
+    initializeStats(enemyRover, enemyTotalPower, playerTotalPower)
   );
   const [currentRound, setCurrentRound] = useState(1);
   const [isPlayerTurn, setIsPlayerTurn] = useState(true);
@@ -167,9 +179,18 @@ export const TurnBasedBattle: React.FC<TurnBasedBattleProps> = ({
     attacker: RoverCombatStats,
     defender: RoverCombatStats,
     isAggressive: boolean,
-    multiplier: number = 1
-  ): number => {
+    multiplier: number = 1,
+    luckBonus: number = 0
+  ): { damage: number; isLuckyStrike: boolean } => {
     let damage = attacker.baseAttack;
+    let isLuckyStrike = false;
+    
+    // Lucky strike check (underdog bonus + base 5% chance)
+    const luckyChance = 0.05 + luckBonus;
+    if (Math.random() < luckyChance) {
+      isLuckyStrike = true;
+      damage *= 1.75; // Lucky strikes do 75% more damage
+    }
     
     // Aggressive attack bonus
     if (isAggressive) {
@@ -186,10 +207,10 @@ export const TurnBasedBattle: React.FC<TurnBasedBattleProps> = ({
       damage = Math.max(1, damage - defender.baseDefense);
     }
     
-    // Add some randomness
-    damage *= (0.9 + Math.random() * 0.2);
+    // Increased randomness for more unpredictable battles
+    damage *= (0.8 + Math.random() * 0.4); // ±20% variance (was ±10%)
     
-    return Math.round(damage);
+    return { damage: Math.round(damage), isLuckyStrike };
   }, []);
 
   const checkBattleEnd = useCallback((
@@ -222,10 +243,12 @@ export const TurnBasedBattle: React.FC<TurnBasedBattleProps> = ({
     switch (action) {
       case 'aggressive': {
         let multiplier = powerSurgeActive ? 1.3 : 1;
-        damage = calculateDamage(playerStats, enemyStats, true, multiplier);
+        const result = calculateDamage(playerStats, enemyStats, true, multiplier, playerLuckBonus);
+        damage = result.damage;
         newEnemyStats.currentHealth = Math.max(0, newEnemyStats.currentHealth - damage);
         actionName = powerSurgeActive ? 'POWER SURGE + AGGRESSIVE ATTACK' : 'AGGRESSIVE ATTACK';
-        description = `${playerRover.name} ${getRandomDescription('aggressive')}! Deals ${damage} damage${powerSurgeActive ? ' (Power Surge!)' : ''}! ${enemyRover.name} ${getRandomDescription('damage_taken')}.`;
+        const luckyText = result.isLuckyStrike ? ' ⚡ LUCKY STRIKE!' : '';
+        description = `${playerRover.name} ${getRandomDescription('aggressive')}! Deals ${damage} damage${powerSurgeActive ? ' (Power Surge!)' : ''}${luckyText} ${enemyRover.name} ${getRandomDescription('damage_taken')}.`;
         setPowerSurgeActive(false);
         break;
       }
@@ -240,10 +263,12 @@ export const TurnBasedBattle: React.FC<TurnBasedBattleProps> = ({
         
         switch (usedAbility) {
           case 'critical_strike': {
-            damage = calculateDamage(playerStats, enemyStats, true, 1.5);
+            const result = calculateDamage(playerStats, enemyStats, true, 1.5, playerLuckBonus);
+            damage = result.damage;
             newEnemyStats.currentHealth = Math.max(0, newEnemyStats.currentHealth - damage);
             actionName = 'CRITICAL STRIKE';
-            description = `${playerRover.name} ${getRandomDescription('critical_strike')}! Critical hit for ${damage} damage!`;
+            const luckyText = result.isLuckyStrike ? ' ⚡ LUCKY STRIKE!' : '';
+            description = `${playerRover.name} ${getRandomDescription('critical_strike')}! Critical hit for ${damage} damage!${luckyText}`;
             break;
           }
           case 'heal': {
@@ -264,10 +289,12 @@ export const TurnBasedBattle: React.FC<TurnBasedBattleProps> = ({
           }
           case 'shield_bash': {
             newPlayerStats.isDefending = true;
-            damage = calculateDamage(playerStats, enemyStats, false, 0.7);
+            const result = calculateDamage(playerStats, enemyStats, false, 0.7, playerLuckBonus);
+            damage = result.damage;
             newEnemyStats.currentHealth = Math.max(0, newEnemyStats.currentHealth - damage);
             actionName = 'SHIELD BASH';
-            description = `${playerRover.name} ${getRandomDescription('shield_bash')}! Deals ${damage} damage while defending!`;
+            const luckyText = result.isLuckyStrike ? ' ⚡ LUCKY STRIKE!' : '';
+            description = `${playerRover.name} ${getRandomDescription('shield_bash')}! Deals ${damage} damage while defending!${luckyText}`;
             break;
           }
         }
@@ -345,10 +372,12 @@ export const TurnBasedBattle: React.FC<TurnBasedBattleProps> = ({
     switch (action) {
       case 'aggressive': {
         let multiplier = enemyPowerSurgeActive ? 1.3 : 1;
-        damage = calculateDamage(currentEnemyStats, currentPlayerStats, true, multiplier);
+        const result = calculateDamage(currentEnemyStats, currentPlayerStats, true, multiplier, enemyLuckBonus);
+        damage = result.damage;
         newPlayerStats.currentHealth = Math.max(0, newPlayerStats.currentHealth - damage);
         actionName = enemyPowerSurgeActive ? 'POWER SURGE + AGGRESSIVE ATTACK' : 'AGGRESSIVE ATTACK';
-        description = `${enemyRover.name} ${getRandomDescription('aggressive')}! Deals ${damage} damage${enemyPowerSurgeActive ? ' (Power Surge!)' : ''}! ${playerRover.name} ${currentPlayerStats.isDefending ? getRandomDescription('damage_reduced') : getRandomDescription('damage_taken')}.`;
+        const luckyText = result.isLuckyStrike ? ' ⚡ LUCKY STRIKE!' : '';
+        description = `${enemyRover.name} ${getRandomDescription('aggressive')}! Deals ${damage} damage${enemyPowerSurgeActive ? ' (Power Surge!)' : ''}${luckyText} ${playerRover.name} ${currentPlayerStats.isDefending ? getRandomDescription('damage_reduced') : getRandomDescription('damage_taken')}.`;
         setEnemyPowerSurgeActive(false);
         break;
       }
@@ -361,10 +390,12 @@ export const TurnBasedBattle: React.FC<TurnBasedBattleProps> = ({
       case 'trait': {
         switch (ability) {
           case 'critical_strike': {
-            damage = calculateDamage(currentEnemyStats, currentPlayerStats, true, 1.5);
+            const result = calculateDamage(currentEnemyStats, currentPlayerStats, true, 1.5, enemyLuckBonus);
+            damage = result.damage;
             newPlayerStats.currentHealth = Math.max(0, newPlayerStats.currentHealth - damage);
             actionName = 'CRITICAL STRIKE';
-            description = `${enemyRover.name} ${getRandomDescription('critical_strike')}! Critical hit for ${damage} damage!`;
+            const luckyText = result.isLuckyStrike ? ' ⚡ LUCKY STRIKE!' : '';
+            description = `${enemyRover.name} ${getRandomDescription('critical_strike')}! Critical hit for ${damage} damage!${luckyText}`;
             break;
           }
           case 'heal': {
@@ -385,18 +416,22 @@ export const TurnBasedBattle: React.FC<TurnBasedBattleProps> = ({
           }
           case 'shield_bash': {
             newEnemyStats.isDefending = true;
-            damage = calculateDamage(currentEnemyStats, currentPlayerStats, false, 0.7);
+            const result = calculateDamage(currentEnemyStats, currentPlayerStats, false, 0.7, enemyLuckBonus);
+            damage = result.damage;
             newPlayerStats.currentHealth = Math.max(0, newPlayerStats.currentHealth - damage);
             actionName = 'SHIELD BASH';
-            description = `${enemyRover.name} ${getRandomDescription('shield_bash')}! Deals ${damage} damage while defending!`;
+            const luckyText = result.isLuckyStrike ? ' ⚡ LUCKY STRIKE!' : '';
+            description = `${enemyRover.name} ${getRandomDescription('shield_bash')}! Deals ${damage} damage while defending!${luckyText}`;
             break;
           }
           default: {
             // Fallback to aggressive
-            damage = calculateDamage(currentEnemyStats, currentPlayerStats, true, 1);
+            const result = calculateDamage(currentEnemyStats, currentPlayerStats, true, 1, enemyLuckBonus);
+            damage = result.damage;
             newPlayerStats.currentHealth = Math.max(0, newPlayerStats.currentHealth - damage);
             actionName = 'AGGRESSIVE ATTACK';
-            description = `${enemyRover.name} ${getRandomDescription('aggressive')}! Deals ${damage} damage!`;
+            const luckyText = result.isLuckyStrike ? ' ⚡ LUCKY STRIKE!' : '';
+            description = `${enemyRover.name} ${getRandomDescription('aggressive')}! Deals ${damage} damage!${luckyText}`;
           }
         }
         break;

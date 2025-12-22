@@ -128,7 +128,7 @@ const getTraitRarity = (
   };
 };
 
-// Calculate power score from traits (lower rarity = higher power)
+// Calculate power score from traits with balancing mechanics
 const calculatePowerScore = (
   traits: Trait[], 
   traitData: Record<string, Record<string, number>>
@@ -136,12 +136,21 @@ const calculatePowerScore = (
   const traitPowers = traits.map(trait => {
     const { rarity, count } = getTraitRarity(trait.trait_type, trait.value, traitData);
     // Lower rarity = higher power (inverse relationship)
-    // If only 1% of NFTs have it, power is ~99. If 50% have it, power is ~50.
     const power = Math.round(Math.max(0, 100 - rarity));
     return { trait, rarity, power, count };
   });
   
-  const totalPower = traitPowers.reduce((sum, tp) => sum + tp.power, 0);
+  // Raw total power
+  const rawPower = traitPowers.reduce((sum, tp) => sum + tp.power, 0);
+  
+  // Apply diminishing returns based on trait count
+  // More traits = less power per trait (logarithmic scaling)
+  const traitCount = traits.length;
+  const diminishingFactor = Math.log2(traitCount + 1) / Math.log2(14); // 13 traits = factor of ~1
+  const adjustedPower = rawPower * (0.5 + (0.5 * diminishingFactor));
+  
+  // Cap the power to prevent extreme differences
+  const totalPower = Math.min(Math.round(adjustedPower), 800);
   
   return { totalPower, traitPowers };
 };
@@ -181,9 +190,16 @@ serve(async (req) => {
     const rover1DominantTrait = rover1Stats.traitPowers.reduce((max, tp) => tp.power > max.power ? tp : max, rover1Stats.traitPowers[0]);
     const rover2DominantTrait = rover2Stats.traitPowers.reduce((max, tp) => tp.power > max.power ? tp : max, rover2Stats.traitPowers[0]);
 
-    // Determine winner with some randomness
-    const power1 = rover1Stats.totalPower + (Math.random() * 50); // Add luck factor
-    const power2 = rover2Stats.totalPower + (Math.random() * 50);
+    // Determine winner with balanced randomness
+    // Calculate power difference and give underdog bonus luck
+    const powerDiff = Math.abs(rover1Stats.totalPower - rover2Stats.totalPower);
+    const underdog1Bonus = rover1Stats.totalPower < rover2Stats.totalPower ? Math.min(powerDiff * 0.5, 100) : 0;
+    const underdog2Bonus = rover2Stats.totalPower < rover1Stats.totalPower ? Math.min(powerDiff * 0.5, 100) : 0;
+    
+    // More randomness + underdog bonus allows weaker rovers to win
+    const luckFactor = 150; // Increased from 50
+    const power1 = rover1Stats.totalPower + underdog1Bonus + (Math.random() * luckFactor);
+    const power2 = rover2Stats.totalPower + underdog2Bonus + (Math.random() * luckFactor);
     
     const winner = power1 > power2 ? rover1 : rover2;
     const loser = power1 > power2 ? rover2 : rover1;

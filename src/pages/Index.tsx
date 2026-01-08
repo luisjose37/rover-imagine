@@ -9,10 +9,11 @@ import { TerminalInput } from '@/components/TerminalInput';
 import { WordCountSelector, WordCountOption } from '@/components/WordCountSelector';
 import { BackgroundMusic } from '@/components/BackgroundMusic';
 import { BattleSimulator } from '@/components/BattleSimulator';
+import { GameHub } from '@/components/GameHub';
 import { cn } from '@/lib/utils';
 import { shareMission } from '@/lib/shareUtils';
 
-type AppMode = 'story' | 'battle';
+type AppMode = 'story' | 'battle' | 'game';
 
 interface NFT {
   identifier: string;
@@ -167,16 +168,19 @@ const Index = () => {
 
         {/* Mode Tabs */}
         <div className="border-b border-primary/30 flex">
-          <button onClick={() => setAppMode('story')} className={cn("flex-1 py-3 font-terminal text-sm sm:text-base transition-all", appMode === 'story' ? "text-primary text-glow bg-primary/10 border-b-2 border-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}>
-            STORY GENERATOR
+          <button onClick={() => setAppMode('story')} className={cn("flex-1 py-3 font-terminal text-xs sm:text-base transition-all", appMode === 'story' ? "text-primary text-glow bg-primary/10 border-b-2 border-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}>
+            STORIES
           </button>
-          <button onClick={() => setAppMode('battle')} className={cn("flex-1 py-3 font-terminal text-sm sm:text-base transition-all", appMode === 'battle' ? "text-primary text-glow bg-primary/10 border-b-2 border-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}>
-            BATTLE SIMULATOR
+          <button onClick={() => setAppMode('battle')} className={cn("flex-1 py-3 font-terminal text-xs sm:text-base transition-all", appMode === 'battle' ? "text-primary text-glow bg-primary/10 border-b-2 border-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}>
+            BATTLES
+          </button>
+          <button onClick={() => setAppMode('game')} className={cn("flex-1 py-3 font-terminal text-xs sm:text-base transition-all", appMode === 'game' ? "text-primary text-glow bg-primary/10 border-b-2 border-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}>
+            GAME
           </button>
         </div>
 
-        {/* Battle Simulator Mode */}
-        {appMode === 'battle' && <BattleSimulator />}
+        {/* Game Mode */}
+        {appMode === 'game' && <GameHub />}
 
         {/* Story Generator Mode */}
         {appMode === 'story' && (

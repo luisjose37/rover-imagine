@@ -9,35 +9,13 @@ interface ASCIIBoxProps {
 
 export const ASCIIBox: React.FC<ASCIIBoxProps> = ({ children, className, title }) => {
   return (
-    <div className={cn("relative", className)}>
-      {/* Top border */}
-      <div className="text-primary text-glow font-terminal text-sm">
-        ╔{'═'.repeat(title ? Math.max(40 - title.length - 4, 10) : 50)}
-        {title && <span className="mx-2">[{title}]</span>}
-        {'═'.repeat(title ? 10 : 0)}╗
-      </div>
-      
-      {/* Content with side borders */}
-      <div className="relative">
-        <div className="absolute left-0 top-0 bottom-0 text-primary text-glow font-terminal flex flex-col">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <span key={i}>║</span>
-          ))}
-        </div>
-        <div className="absolute right-0 top-0 bottom-0 text-primary text-glow font-terminal flex flex-col">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <span key={i}>║</span>
-          ))}
-        </div>
-        <div className="px-6 py-2">
-          {children}
-        </div>
-      </div>
-      
-      {/* Bottom border */}
-      <div className="text-primary text-glow font-terminal text-sm">
-        ╚{'═'.repeat(60)}╝
-      </div>
+    <div className={cn("win95-groupbox", className)}>
+      {title && (
+        <span className="absolute -top-2 left-3 bg-card px-1 text-[11px] font-win95">
+          {title}
+        </span>
+      )}
+      {children}
     </div>
   );
 };
@@ -46,7 +24,7 @@ interface ASCIILoaderProps {
   text?: string;
 }
 
-export const ASCIILoader: React.FC<ASCIILoaderProps> = ({ text = "LOADING" }) => {
+export const ASCIILoader: React.FC<ASCIILoaderProps> = ({ text = "Loading" }) => {
   const [progress, setProgress] = React.useState(0);
 
   React.useEffect(() => {
@@ -59,23 +37,25 @@ export const ASCIILoader: React.FC<ASCIILoaderProps> = ({ text = "LOADING" }) =>
     return () => clearInterval(interval);
   }, []);
 
+  const blocks = Math.floor(progress / 5);
+
   return (
-    <div className="flex flex-col items-center gap-4 py-8 w-full max-w-md mx-auto">
-      <div className="w-full">
-        <div className="h-3 w-full bg-secondary/50 rounded-sm overflow-hidden border border-primary/30">
-          <div 
-            className="h-full bg-primary transition-all duration-200 ease-out"
-            style={{ width: `${progress}%` }}
-          />
+    <div className="flex flex-col items-center gap-3 py-6 w-full max-w-sm mx-auto">
+      <div className="w-full win95-sunken p-1 bg-white">
+        <div className="flex h-4">
+          {Array.from({ length: 20 }).map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                "flex-1 mx-[1px]",
+                i < blocks ? "bg-primary" : "bg-transparent"
+              )}
+            />
+          ))}
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <span className="text-primary font-terminal text-xl">[</span>
-        <span className="text-primary font-terminal text-xl glow-pulse">
-          {text}
-        </span>
-        <span className="text-primary font-terminal text-xl loading-dots"></span>
-        <span className="text-primary font-terminal text-xl">]</span>
+      <div className="text-foreground font-win95 text-[11px]">
+        {text}... {Math.floor(progress)}%
       </div>
     </div>
   );
@@ -83,14 +63,14 @@ export const ASCIILoader: React.FC<ASCIILoaderProps> = ({ text = "LOADING" }) =>
 
 export const ASCIIDivider: React.FC<{ className?: string }> = ({ className }) => {
   return (
-    <div className={cn("text-primary/50 font-terminal text-sm text-center py-2", className)}>
-      ═══════════════════════════════════════════════════════════
+    <div className={cn("my-2", className)}>
+      <div className="win95-groove" />
     </div>
   );
 };
 
 export const BlinkingCursor: React.FC = () => {
   return (
-    <span className="inline-block w-3 h-5 bg-primary animate-blink ml-1" />
+    <span className="inline-block w-[2px] h-[13px] bg-foreground animate-pulse ml-[1px]" />
   );
 };

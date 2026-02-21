@@ -14,8 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        terminal: ['VT323', 'monospace'],
-        mono: ['Share Tech Mono', 'monospace'],
+        win95: ['Tahoma', 'MS Sans Serif', 'Arial', 'sans-serif'],
+        terminal: ['Tahoma', 'MS Sans Serif', 'Arial', 'sans-serif'],
+        mono: ['Fixedsys', 'Courier New', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -51,11 +52,14 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        terminal: {
-          green: "hsl(120 100% 50%)",
-          "green-dim": "hsl(120 60% 40%)",
-          "green-dark": "hsl(120 100% 15%)",
-          black: "hsl(0 0% 0%)",
+        win95: {
+          face: "hsl(0 0% 75%)",
+          highlight: "hsl(0 0% 100%)",
+          shadow: "hsl(0 0% 50%)",
+          "dark-shadow": "hsl(0 0% 25%)",
+          navy: "hsl(240 100% 25%)",
+          teal: "hsl(180 100% 25%)",
+          white: "hsl(0 0% 100%)",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -82,29 +86,10 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        "pulse-glow": {
-          "0%, 100%": { 
-            boxShadow: "0 0 10px hsl(120 100% 50% / 0.5)",
-          },
-          "50%": { 
-            boxShadow: "0 0 30px hsl(120 100% 50% / 0.8), 0 0 60px hsl(120 100% 50% / 0.4)",
-          },
-        },
-        "typing": {
-          from: { width: "0" },
-          to: { width: "100%" },
-        },
-        "blink": {
-          "0%, 50%": { opacity: "1" },
-          "51%, 100%": { opacity: "0" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
-        "typing": "typing 2s steps(40, end)",
-        "blink": "blink 1s infinite",
       },
     },
   },

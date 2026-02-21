@@ -23,28 +23,29 @@ export const WordCountSelector: React.FC<WordCountSelectorProps> = ({
   disabled,
 }) => {
   return (
-    <div className="font-terminal flex flex-col items-center w-full">
-      <div className="text-muted-foreground text-xs sm:text-sm mb-2">
-        {">"} SELECT STORY LENGTH:
-      </div>
-      <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center">
+    <div className="font-win95 win95-groupbox relative w-full">
+      <span className="absolute -top-2 left-3 bg-card px-1 text-[11px]">
+        Story Length
+      </span>
+      <div className="flex flex-wrap gap-3 justify-center py-1">
         {options.map((option) => (
-          <button
+          <label
             key={option.value}
-            onClick={() => onChange(option.value)}
-            disabled={disabled}
             className={cn(
-              "px-2 sm:px-4 py-1.5 sm:py-2 border transition-all duration-200",
-              "font-terminal text-xs sm:text-sm",
-              value === option.value
-                ? "border-primary bg-primary text-primary-foreground border-glow"
-                : "border-primary/30 text-primary/70 hover:border-primary/60 hover:text-primary",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
+              "flex items-center gap-1 text-[11px] cursor-pointer",
+              disabled && "opacity-50 cursor-not-allowed"
             )}
           >
-            <span className="hidden sm:inline">[{value === option.value ? '●' : '○'}] </span>
-            {option.label}
-          </button>
+            <input
+              type="radio"
+              name="wordCount"
+              checked={value === option.value}
+              onChange={() => onChange(option.value)}
+              disabled={disabled}
+              className="accent-primary"
+            />
+            {option.label} words
+          </label>
         ))}
       </div>
     </div>

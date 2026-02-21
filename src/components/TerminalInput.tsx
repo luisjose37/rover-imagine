@@ -27,34 +27,25 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   };
 
   return (
-    <div className={cn("font-terminal w-full sm:w-auto", className)}>
-      <label className="block text-muted-foreground text-xs sm:text-sm mb-1">
-        {">"} {label}:
+    <div className={cn("font-win95 w-full sm:w-auto", className)}>
+      <label className="block text-foreground text-[11px] mb-1">
+        {label}:
       </label>
-      <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary text-glow">
-          $
-        </span>
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={disabled}
-          className={cn(
-            "w-full bg-background border border-primary/50 text-primary text-glow",
-            "pl-8 pr-4 py-2 font-terminal text-base sm:text-lg",
-            "placeholder:text-muted-foreground/50",
-            "focus:outline-none focus:border-primary focus:border-glow",
-            "disabled:opacity-50 disabled:cursor-not-allowed",
-            "transition-all duration-200"
-          )}
-        />
-        {value && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-5 bg-primary animate-blink" />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={cn(
+          "w-full bg-white text-foreground win95-sunken",
+          "px-2 py-1 font-win95 text-[11px]",
+          "placeholder:text-muted",
+          "focus:outline-none",
+          "disabled:bg-card disabled:cursor-not-allowed"
         )}
-      </div>
+      />
     </div>
   );
 };

@@ -9,11 +9,10 @@ import { TerminalInput } from '@/components/TerminalInput';
 import { WordCountSelector, WordCountOption } from '@/components/WordCountSelector';
 import { BackgroundMusic } from '@/components/BackgroundMusic';
 import { BattleSimulator } from '@/components/BattleSimulator';
-import { GameHub } from '@/components/GameHub';
 import { cn } from '@/lib/utils';
 import { shareMission } from '@/lib/shareUtils';
 
-type AppMode = 'story' | 'battle' | 'game';
+type AppMode = 'story' | 'battle';
 
 interface NFT {
   identifier: string;
@@ -174,13 +173,7 @@ const Index = () => {
           <button onClick={() => setAppMode('battle')} className={cn("flex-1 py-3 font-terminal text-xs sm:text-base transition-all", appMode === 'battle' ? "text-primary text-glow bg-primary/10 border-b-2 border-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}>
             BATTLES
           </button>
-          <button onClick={() => setAppMode('game')} className={cn("flex-1 py-3 font-terminal text-xs sm:text-base transition-all", appMode === 'game' ? "text-primary text-glow bg-primary/10 border-b-2 border-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/5")}>
-            GAME
-          </button>
         </div>
-
-        {/* Game Mode */}
-        {appMode === 'game' && <GameHub />}
 
         {/* Story Generator Mode */}
         {appMode === 'story' && (

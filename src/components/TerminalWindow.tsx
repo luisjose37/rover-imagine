@@ -14,32 +14,27 @@ export const TerminalWindow: React.FC<TerminalWindowProps> = ({
 }) => {
   return (
     <div className={cn(
-      "relative bg-background border border-primary ascii-box",
+      "relative bg-card win95-raised",
       "overflow-hidden",
       className
     )}>
-      {/* Scanlines overlay */}
-      <div className="absolute inset-0 scanlines pointer-events-none" />
-      
-      {/* Terminal header */}
-      <div className="border-b border-primary px-3 sm:px-4 py-2 flex items-center justify-between bg-secondary/30">
-        <div className="flex items-center gap-1 sm:gap-3">
-          <span className="text-primary text-glow font-terminal text-sm sm:text-lg hidden sm:inline">╔═</span>
-          <span className="text-primary text-glow font-terminal text-sm sm:text-xl tracking-widest">
+      {/* Win95 Title Bar */}
+      <div className="win95-titlebar px-2 py-1 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs">📁</span>
+          <span className="text-primary-foreground font-win95 text-sm font-bold tracking-normal">
             {title}
           </span>
-          <span className="text-primary text-glow font-terminal text-sm sm:text-lg hidden sm:inline">═╗</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground font-terminal text-xs sm:text-sm hidden sm:inline">
-            v1.0.0
-          </span>
-          <span className="w-2 h-2 bg-primary rounded-full animate-pulse-glow" />
+        <div className="flex items-center gap-[2px]">
+          <button className="win95-button !p-0 !min-w-[16px] w-[16px] h-[14px] flex items-center justify-center text-[10px] leading-none">_</button>
+          <button className="win95-button !p-0 !min-w-[16px] w-[16px] h-[14px] flex items-center justify-center text-[10px] leading-none">□</button>
+          <button className="win95-button !p-0 !min-w-[16px] w-[16px] h-[14px] flex items-center justify-center text-[10px] leading-none font-bold">×</button>
         </div>
       </div>
       
-      {/* Terminal content */}
-      <div className="relative crt-flicker">
+      {/* Window content */}
+      <div className="relative">
         {children}
       </div>
     </div>
